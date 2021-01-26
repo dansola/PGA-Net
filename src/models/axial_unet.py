@@ -3,17 +3,17 @@ from models.axial_unet_parts import Embed, AttentionDown, AttentionUp, conv1x1
 
 
 class AxialUnet(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims, device, do_downsample=True, stride=2, sine_pos=True):
+    def __init__(self, channels, n_classes, embedding_dims, do_downsample=True, stride=2, sine_pos=True, img_crop=320):
         super(AxialUnet, self).__init__()
         self.channels = channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
-        self.device = device
         self.do_downsample = do_downsample
         self.stride = stride
         self.sine_pos = sine_pos
+        self.img_crop = img_crop
 
-        self.embed = Embed(self.channels, self.embedding_dims, sine_pos=self.sine_pos)
+        self.embed = Embed(self.channels, self.embedding_dims, sine_pos=self.sine_pos, img_shape=(img_crop, img_crop))
         self.down1 = AttentionDown(self.embedding_dims)
         self.down2 = AttentionDown(self.embedding_dims * 2)
         self.down3 = AttentionDown(self.embedding_dims * 4)

@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from models.utils import PositionalEncodingPermute2D, AxialPositionalEmbedding, elem_add
 from models.axial_attention import AxialAttention
@@ -39,6 +40,7 @@ class AttentionDown(nn.Module):
         super(AttentionDown, self).__init__()
         self.embedding_dims = embedding_dims
         self.embedding_dims_half = int(embedding_dims / 2)
+        self.embedding_dims_double = embedding_dims * 2
         self.do_downsample = do_downsample
         self.stride = stride
 
@@ -48,13 +50,17 @@ class AttentionDown(nn.Module):
         self.conv_down2 = nn.Sequential(conv1x1(self.embedding_dims, self.embedding_dims, 1),
                                         nn.BatchNorm2d(self.embedding_dims),
                                         nn.ReLU(inplace=True))
+        self.conv_down3 = nn.Sequential(conv1x1(self.embedding_dims_double, self.embedding_dims, 1),
+                                        nn.BatchNorm2d(self.embedding_dims),
+                                        nn.ReLU(inplace=True))
         self.attn = AxialAttention(dim=self.embedding_dims_half, dim_index=1, heads=2, num_dimensions=2,
                                    sum_axial_out=True)
         self.conv_up = conv1x1(self.embedding_dims_half, self.embedding_dims, 1)
         self.bn = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = nn.Sequential(conv1x1(self.embedding_dims, self.embedding_dims * 2, self.stride),
-                                        nn.BatchNorm2d(self.embedding_dims * 2))
+                                        nn.BatchNorm2d(self.embedding_dims * 2),
+                                        nn.ReLU(inplace=True))
 
     def forward(self, x):
         x_conv_down1 = self.conv_down1(x)
@@ -64,12 +70,15 @@ class AttentionDown(nn.Module):
         embedded_attn = self.relu(embedded_attn)
 
         x_conv_up = self.conv_up(embedded_attn)
-        embedded_skip = elem_add(x_conv_up, x_conv_down2)
-        embedded_final = self.bn(embedded_skip)
+        # embedded_skip = elem_add(x_conv_up, x_conv_down2)
+        embedded_skip = torch.cat([x_conv_up, x_conv_down2], dim=1)
+        embedded_final = self.conv_down3(embedded_skip)
+
+        # embedded_final = self.bn(embedded_skip)
 
         if self.do_downsample:
             embedded_final = self.downsample(embedded_final)
-        embedded_final = self.relu(embedded_final)
+        # embedded_final = self.relu(embedded_final)
 
         return embedded_final
 
@@ -89,6 +98,12 @@ class AttentionUp(nn.Module):
                                         nn.BatchNorm2d(self.embedding_dims_half),
                                         nn.ReLU(inplace=True),
                                         nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True))
+        self.conv_down3 = nn.Sequential(conv1x1(self.embedding_dims, self.embedding_dims_half, 1),
+                                        nn.BatchNorm2d(self.embedding_dims_half),
+                                        nn.ReLU(inplace=True))
+        self.conv_down4 = nn.Sequential(conv1x1(self.embedding_dims, self.embedding_dims_half, 1),
+                                        nn.BatchNorm2d(self.embedding_dims_half),
+                                        nn.ReLU(inplace=True))
         self.attn = AxialAttention(dim=self.embedding_dims_half, dim_index=1, heads=2, num_dimensions=2,
                                    sum_axial_out=True)
         self.conv_up = conv1x1(self.embedding_dims_half, self.embedding_dims_half, 1)
@@ -104,12 +119,16 @@ class AttentionUp(nn.Module):
         embedded_attn = self.relu(embedded_attn)
 
         x_conv_up = self.conv_up(embedded_attn)
-        embedded_skip = elem_add(x_conv_up, x_conv_down2)
+        # embedded_skip = elem_add(x_conv_up, x_conv_down2)
+        embedded_skip = torch.cat([x_conv_up, x_conv_down2], dim=1)
+        embedded_skip = self.conv_down3(embedded_skip)
 
         if self.skip:
             conv_up_encoder = self.conv_up_encoder(x2)
-            embedded_skip = elem_add(embedded_skip, conv_up_encoder)
-
-        embedded_final = self.bn(embedded_skip)
-
-        return embedded_final
+            # embedded_skip = elem_add(embedded_skip, conv_up_encoder)
+            embedded_skip = torch.cat([embedded_skip, conv_up_encoder], dim=1)
+            # embedded_final = self.bn(embedded_skip)
+            embedded_final = self.conv_down4(embedded_skip)
+            return embedded_final
+        else:
+            return embedded_skip

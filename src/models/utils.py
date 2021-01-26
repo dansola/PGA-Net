@@ -2,13 +2,15 @@ import torch
 from torch import nn
 import numpy as np
 
+
 def elem_add(tensor_a, tensor_b):
     t_list = [tensor_a, tensor_b]
     t_list = torch.stack(t_list)
     return torch.sum(t_list, dim=0)
 
+
 class AxialPositionalEmbedding(nn.Module):
-    def __init__(self, dim, shape, emb_dim_index = 1):
+    def __init__(self, dim, shape, emb_dim_index=1):
         super().__init__()
         parameters = []
         total_dimensions = len(shape) + 2

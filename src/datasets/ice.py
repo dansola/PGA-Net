@@ -1,5 +1,4 @@
 import os
-import logging
 import cv2
 import numpy as np
 from PIL import Image
@@ -11,22 +10,23 @@ STDS = [58.89167, 58.966404, 59.09349]
 
 
 class Ice(Dataset):
-    def __init__(self, imgs_dir, masks_dir, txt_dir, split, scale=1):
+    def __init__(self, imgs_dir, masks_dir, txt_dir, split, scale=1, crop=300):
         self.imgs_dir = imgs_dir
         self.masks_dir = masks_dir
         self.txt_dir = txt_dir
         self.split = split
         self.scale = scale
+        self.crop = crop
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
 
         if split == "train":
             file_name = os.path.join(self.txt_dir, 'ice_train.txt')
-
         elif split == "val":
             file_name = os.path.join(self.txt_dir, 'ice_val.txt')
-
         elif split == "test":
             file_name = os.path.join(self.txt_dir, 'ice_test.txt')
+        else:
+            raise TypeError(f"Please enter one of train, val, or test for split.  You entered {split}.")
 
         self.img_ids = [i_id.strip() for i_id in open(file_name)]
         self.files = []
@@ -37,7 +37,6 @@ class Ice(Dataset):
                 "img": img_file,
                 "mask": mask_file
             })
-        logging.info(f'Creating dataset with {len(self.files)} examples')
 
     def __len__(self):
         return len(self.files)
@@ -46,13 +45,14 @@ class Ice(Dataset):
         img = cv2.resize(img, None, fx=self.scale, fy=self.scale, interpolation=cv2.INTER_LINEAR)
         mask = cv2.resize(mask, None, fx=self.scale, fy=self.scale, interpolation=cv2.INTER_LINEAR)
 
-        img = transforms.CenterCrop(300)(Image.fromarray(img))
-        mask = transforms.CenterCrop(300)(Image.fromarray(mask))
+        img = transforms.CenterCrop(self.crop)(Image.fromarray(img))
+        mask = transforms.CenterCrop(self.crop)(Image.fromarray(mask.astype(np.uint8)))
 
         img = transforms.ToTensor()(img)
-        img = transforms.Normalize(mean=MEANS, std=STDS)(img).unsqueeze(0)
+        img = transforms.Normalize(mean=MEANS, std=STDS)(img)
+        img = img.permute(1, 2, 0).contiguous()
 
-        mask = transforms.ToTensor()(mask).unsqueeze(0)
+        mask = transforms.ToTensor()(mask)
 
         return img, mask
 
@@ -64,7 +64,7 @@ class Ice(Dataset):
         mask = Image.open(datafiles["mask"])
         mask = np.array(mask)[:, :, 0]
         masks = [(mask == v) for v in [0, 128, 255]]
-        mask = np.stack(masks, axis=-1).astype('int8')
+        mask = np.stack(masks, axis=-1).astype('float')
 
         assert img.size == mask.size, \
             f'Image and mask {i} should be the same size, but are {img.size} and {mask.size}'
