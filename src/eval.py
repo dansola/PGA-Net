@@ -18,8 +18,8 @@ def eval_net(net, loader, device):
             with torch.no_grad():
                 mask_pred = net(imgs)
 
-            target = torch.argmax(true_masks.to(dtype=torch.long), dim=1)
-            tot_loss += F.cross_entropy(mask_pred, target).item()
+            target = true_masks.to(dtype=torch.long)
+            tot_loss += F.cross_entropy(mask_pred, target.squeeze(1)).item()
             pbar.update()
 
     net.train()
