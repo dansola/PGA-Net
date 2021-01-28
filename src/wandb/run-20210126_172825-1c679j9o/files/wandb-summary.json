@@ -1,1 +1,0 @@
-{"Training Loss": 0.0008286370430141687, "_step": 799, "_runtime": 412, "_timestamp": 1611700517, "graph_0": {"_type": "graph-file", "path": "media/graph/graph_0_summary_50c9af09.graph.json", "sha256": "50c9af09238412673fa93d9f7d8ea1b47295e8f1ab9f57bfd36ed8deea2ed52e", "size": 25472}, "Validation Loss": 0.0008158142911270261}

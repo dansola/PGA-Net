@@ -1,16 +1,13 @@
 import argparse
 import os
 import sys
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
 import torch
 import torch.nn as nn
 from torch import optim
 from tqdm import tqdm
 from eval import eval_net
-from models.axial_unet import AxialUnet
-from models.unet_model import UNet
+from models.axial_unet.axial_unet import AxialUnet
+from models.basic_axial.basic_axialnet import BasicAxial
 from datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
@@ -27,13 +24,13 @@ def get_args():
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
-    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.001,
+    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
                         help='Learning rate', dest='lr')
     parser.add_argument('-f', '--load', dest='load', type=str, default=False,
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=320,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
@@ -62,7 +59,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[-1] == net.channels, \
+                assert imgs.shape[1] == net.channels, \
                     f'Network has been defined with {net.channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
@@ -80,7 +77,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 # axs[2].imshow(masks_pred.squeeze(0).permute(1, 2, 0).cpu().detach().numpy()[:, :, 0])
                 # plt.show()
 
-                example_images = [wandb.Image(imgs.permute(0, 3, 1, 2)[0], caption='Image'),
+                example_images = [wandb.Image(imgs[0], caption='Image'),
                                   wandb.Image(target.to(dtype=torch.float)[0],
                                               caption='True Mask'),
                                   wandb.Image(masks_pred[0],
@@ -123,8 +120,9 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
+    # net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    net = BasicAxial(3, 3, 10, img_crop=args.crop)
     wandb.watch(net)
 
     if args.load:

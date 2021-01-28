@@ -96,6 +96,7 @@ class Ice(Dataset):
 
         img, mask = self.process(img, mask)
         mask = mask.unsqueeze(0)
+        img = img.permute(2, 0, 1).contiguous()
 
         return {
             'image': img,
