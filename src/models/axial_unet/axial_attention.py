@@ -91,13 +91,17 @@ class SelfAttention(nn.Module):
         self.to_out = nn.Linear(dim_hidden, dim)
 
     def forward(self, x, kv=None):
+        # print(x.shape)
         kv = x if kv is None else kv
         q, k, v = (self.to_q(x), *self.to_kv(kv).chunk(2, dim=-1))
+        print(q.shape, k.shape, v.shape)
 
         b, t, d, h, e = *q.shape, self.heads, self.dim_heads
+        print(b, t, d, h, e)
 
         merge_heads = lambda x: x.reshape(b, -1, h, e).transpose(1, 2).reshape(b * h, -1, e)
         q, k, v = map(merge_heads, (q, k, v))
+        print(q.shape, k.shape, v.shape)
 
         dots = torch.einsum('bie,bje->bij', q, k) * (e ** -0.5)
         dots = dots.softmax(dim=-1)
@@ -105,6 +109,7 @@ class SelfAttention(nn.Module):
 
         out = out.reshape(b, h, -1, e).transpose(1, 2).reshape(b, -1, d)
         out = self.to_out(out)
+        # print(out.shape)
         return out
 
 
@@ -118,6 +123,7 @@ class AxialAttention(nn.Module):
 
         attentions = []
         for permutation in calculate_permutations(num_dimensions, dim_index):
+            # print(permutation)
             attentions.append(PermuteToFrom(permutation, SelfAttention(dim, heads, dim_heads)))
 
         self.axial_attentions = nn.ModuleList(attentions)

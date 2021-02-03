@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.axial_unet.utils import AxialPositionalEmbedding
+from models.axial_unet.utils import AxialPositionalEmbedding, PositionalEncodingPermute2D
 from models.axial_unet.axial_attention import AxialAttention, AxialImageTransformer
 
 
@@ -20,7 +20,8 @@ class Block(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
-        self.pos = AxialPositionalEmbedding(self.embedding_dims, self.img_shape)
+        # self.pos = PositionalEncodingPermute2D(self.embedding_dims)
+        # self.pos = AxialPositionalEmbedding(self.embedding_dims, self.img_shape)
         self.attn = AxialAttention(dim=self.embedding_dims, dim_index=1, heads=2, num_dimensions=2,
                                    sum_axial_out=True)
 
@@ -28,10 +29,18 @@ class Block(nn.Module):
         # self.conv2 = conv1x1(self.embedding_dims, self.embedding_dims)
         self.bn2 = nn.BatchNorm2d(self.embedding_dims)
 
+        # self.conv3 = conv1x1(self.embedding_dim
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
+
+        # pos = self.pos(x)
+        # x = torch.cat((pos, x), dim=1)
+        # x = self.conv3(x)
+        # x = self.bn3(x)
+        # x = self.relu(x)
 
         x_attn = self.attn(x)
         x_attn = self.relu(x_attn)

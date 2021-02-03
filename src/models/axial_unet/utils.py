@@ -33,9 +33,6 @@ class AxialPositionalEmbedding(nn.Module):
 
 class PositionalEncoding2D(nn.Module):
     def __init__(self, channels):
-        """
-        :param channels: The last dimension of the tensor you want to apply pos emb to.
-        """
         super(PositionalEncoding2D, self).__init__()
         channels = int(np.ceil(channels / 2))
         self.channels = channels
@@ -43,10 +40,6 @@ class PositionalEncoding2D(nn.Module):
         self.register_buffer('inv_freq', inv_freq)
 
     def forward(self, tensor):
-        """
-        :param tensor: A 4d tensor of size (batch_size, x, y, ch)
-        :return: Positional Encoding Matrix of size (batch_size, x, y, ch)
-        """
         if len(tensor.shape) != 4:
             raise RuntimeError("The input tensor has to be 4d!")
         _, x, y, orig_ch = tensor.shape
@@ -65,9 +58,6 @@ class PositionalEncoding2D(nn.Module):
 
 class PositionalEncodingPermute2D(nn.Module):
     def __init__(self, channels):
-        """
-        Accepts (batchsize, ch, x, y) instead of (batchsize, x, y, ch)
-        """
         super(PositionalEncodingPermute2D, self).__init__()
         self.penc = PositionalEncoding2D(channels)
 

@@ -142,3 +142,4 @@ dmypy.json
 /src/checkpoints/**
 /src/wandb/**
 wandb/**
+.npy
