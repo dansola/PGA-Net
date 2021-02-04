@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 def get_image_dicts(prop_flat):
@@ -21,7 +22,16 @@ def get_image_dicts(prop_flat):
     return obj_dict, bg_dict
 
 
-def build_pos_tensors(x, obj_dict, bg_dict, inds):
+def build_pos_tensors(x, obj_dict, inds):
     obj_inds = np.array(list(obj_dict.values()))[inds]
-    bg_inds = np.array(list(bg_dict.values()))[inds]
-    return x[obj_inds], x[bg_inds]
+    return x[:, obj_inds]
+
+
+def build_rand_inds(heads, img_crop):
+    rand_inds = []
+    for _ in range(heads):
+        inds_head = []
+        for _ in range(img_crop):
+            inds_head.append(random.sample(range(img_crop ** 2), img_crop))
+        rand_inds.append(inds_head)
+    return rand_inds
