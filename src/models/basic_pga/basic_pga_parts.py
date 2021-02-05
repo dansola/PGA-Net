@@ -1,16 +1,62 @@
 import torch
 from torch import nn
 from models.basic_pga.utils import get_image_dicts, build_pos_tensors, build_rand_inds
-import random
-import matplotlib.pyplot as plt
+
+
+def conv1x1(in_planes, out_planes, stride=1):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+
+
+class BlockPGA(nn.Module):
+    def __init__(self, channels, embedding_dims, img_shape=(300, 300)):
+        super(BlockPGA, self).__init__()
+        self.channels = channels
+        self.embedding_dims = embedding_dims
+        self.embedding_dims_double = embedding_dims * 2
+        self.img_shape = img_shape
+
+        self.conv1 = conv1x1(self.channels, self.embedding_dims)
+        self.bn1 = nn.BatchNorm2d(self.embedding_dims)
+        self.relu = nn.ReLU(inplace=True)
+
+        # self.pos = PositionalEncodingPermute2D(self.embedding_dims)
+        # self.pos = AxialPositionalEmbedding(self.embedding_dims, self.img_shape)
+        self.attn = PropAttention(dim=self.embedding_dims, heads=2, img_crop=img_shape[0])
+
+        self.conv2 = conv1x1(self.embedding_dims_double, self.embedding_dims)
+        # self.conv2 = conv1x1(self.embedding_dims, self.embedding_dims)
+        self.bn2 = nn.BatchNorm2d(self.embedding_dims)
+
+        # self.conv3 = conv1x1(self.embedding_dim
+
+    def forward(self, x, prop):
+        # print(x.shape)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+
+        # pos = self.pos(x)
+        # x = torch.cat((pos, x), dim=1)
+        # x = self.conv3(x)
+        # x = self.bn3(x)
+        # x = self.relu(x)
+
+        x_attn = self.attn(x, prop)
+        x_attn = self.relu(x_attn)
+
+        x = torch.cat((x_attn, x), dim=1)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+
+        return x
 
 
 class PropAttention(nn.Module):
-    def __init__(self, dim, heads, img_crop, dim_heads=None, dim_index=1):
+    def __init__(self, dim, heads, img_crop, dim_heads=None):
         assert (dim % heads) == 0, 'hidden dimension must be divisible by number of heads'
         super().__init__()
         self.dim_heads = (dim // heads) if dim_heads is None else dim_heads
-        dim_hidden = self.dim_heads * heads
 
         self.rand_inds = build_rand_inds(heads, img_crop)
 
@@ -47,8 +93,8 @@ class PropAttention(nn.Module):
 
         for i, vec in enumerate(obj_tensor_tuple):
             img = self.add_vec_to_tensor(img, inds[i], vec.squeeze(0).transpose(1, 0), obj_dict)
-        # for i, vec in enumerate(bg_tensor_tuple):
-        #     img = self.add_vec_to_tensor(img, inds[i + len(obj_tensor_tuple)], vec.squeeze(0).transpose(1, 0), bg_dict)
+        for i, vec in enumerate(bg_tensor_tuple):
+            img = self.add_vec_to_tensor(img, inds[i + len(obj_tensor_tuple)], vec.squeeze(0).transpose(1, 0), bg_dict)
 
         return img
 
@@ -70,7 +116,7 @@ class PropAttention(nn.Module):
         for inds, h in zip(self.rand_inds, img_heads):
             head_list.append(self.construct(h, obj_dict, bg_dict, inds))
 
-        out = torch.cat(head_list, dim=0).view(self.heads*self.img_crop, self.img_crop, -1)
+        out = torch.cat(head_list, dim=0).view(self.heads * self.img_crop, self.img_crop, -1)
 
         kv = out if kv is None else kv
         q, k, v = (self.to_q(out), *self.to_kv(kv).chunk(2, dim=-1))
@@ -78,7 +124,7 @@ class PropAttention(nn.Module):
         dots = dots.softmax(dim=-1)
         out = torch.einsum('bij,bje->bie', dots, v)
 
-        out = out.view(self.heads*self.img_crop, -1, self.img_crop)
+        out = out.view(self.heads * self.img_crop, -1, self.img_crop)
         ts = torch.chunk(out, self.heads, dim=0)
 
         new_img_list = []
@@ -87,7 +133,6 @@ class PropAttention(nn.Module):
         out_final = torch.cat(new_img_list, dim=1).permute(0, 2, 3, 1).contiguous()
         out_final = self.to_out(out_final)
         return out_final.permute(0, 3, 1, 2).contiguous()
-
 
 # class _PropAttention(nn.Module):
 #     def __init__(self, dim, heads, img_crop, dim_heads=None, dim_index=1):

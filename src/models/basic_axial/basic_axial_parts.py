@@ -8,9 +8,9 @@ def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
-class Block(nn.Module):
+class BlockAxial(nn.Module):
     def __init__(self, channels, embedding_dims, img_shape=(300, 300)):
-        super(Block, self).__init__()
+        super(BlockAxial, self).__init__()
         self.channels = channels
         self.embedding_dims = embedding_dims
         self.embedding_dims_double = embedding_dims * 2
@@ -32,6 +32,7 @@ class Block(nn.Module):
         # self.conv3 = conv1x1(self.embedding_dim
 
     def forward(self, x):
+        # print(x.shape)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)

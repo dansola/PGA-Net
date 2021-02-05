@@ -8,7 +8,8 @@ from tqdm import tqdm
 from eval import eval_net
 from models.axial_unet.axial_unet import AxialUnet
 from models.basic_axial.basic_axialnet import BasicAxial
-from datasets.ice import Ice
+from models.basic_pga.basic_pga_net import BasicAxialPGA
+from datasets.ice import Ice, IceWithProposals
 from torch.utils.data import DataLoader
 import wandb
 
@@ -37,10 +38,16 @@ def get_args():
 
 
 def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
-    train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                    os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
-    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+    # train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+    #                 os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
+    # val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+    #               os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+    train_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                    os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
+                                 'train', img_scale, img_crop)
+    val_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                  os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
+                               'val', img_scale, img_crop)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size)
@@ -58,6 +65,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
             for batch in train_loader:
                 imgs = batch['image']
                 true_masks = batch['mask']
+                props = batch['prop']
 
                 assert imgs.shape[1] == net.channels, \
                     f'Network has been defined with {net.channels} input channels, ' \
@@ -66,8 +74,10 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
+                props = props.to(device=device, dtype=torch.long)
 
-                masks_pred = net(imgs)
+                # masks_pred = net(imgs)
+                masks_pred = net(imgs, props)
 
                 # print(imgs.shape, true_masks.shape, target.shape, masks_pred.shape)
                 # print(torch.unique(target))
@@ -98,14 +108,14 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 pbar.update(imgs.shape[0])
                 global_step += 1
-                if len(train_set) > 10:
-                    n = 10
-                else:
-                    n = 1
-                if global_step % (len(train_set) // (n * batch_size)) == 0:
-                    val_score = eval_net(net, val_loader, device)
-                    wandb.log({"Validation Loss": val_score})
-                    scheduler.step(val_score)
+                # if len(train_set) > 10:
+                #     n = 10
+                # else:
+                #     n = 1
+                # if global_step % (len(train_set) // (n * batch_size)) == 0:
+                #     val_score = eval_net(net, val_loader, device)
+                #     wandb.log({"Validation Loss": val_score})
+                #     scheduler.step(val_score)
 
         if save_cp:
             try:
@@ -122,7 +132,8 @@ if __name__ == '__main__':
 
     # net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    # net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    net = BasicAxialPGA(3, 3, 10, img_crop=args.crop)
     wandb.watch(net)
 
     if args.load:
