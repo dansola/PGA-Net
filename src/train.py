@@ -108,14 +108,21 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 pbar.update(imgs.shape[0])
                 global_step += 1
-                # if len(train_set) > 10:
-                #     n = 10
-                # else:
-                #     n = 1
-                # if global_step % (len(train_set) // (n * batch_size)) == 0:
-                #     val_score = eval_net(net, val_loader, device)
-                #     wandb.log({"Validation Loss": val_score})
-                #     scheduler.step(val_score)
+                if len(train_set) > 10:
+                    n = 10
+                else:
+                    n = 1
+                if global_step % (len(train_set) // (n * batch_size)) == 0:
+                    val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
+                    wandb.log({"Validation Loss": val_loss})
+                    wandb.log({"Validation IoU": val_iou})
+                    wandb.log({"Validation Accuracy": val_acc})
+                    scheduler.step(val_loss)
+        # val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
+        # wandb.log({"Validation Loss": val_loss})
+        # wandb.log({"Validation IoU": val_iou})
+        # wandb.log({"Validation Accuracy": val_acc})
+        # scheduler.step(val_loss)
 
         if save_cp:
             try:

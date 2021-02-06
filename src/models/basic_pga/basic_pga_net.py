@@ -23,6 +23,9 @@ class BasicAxialPGA(nn.Module):
 
         self.outc = conv1x1(self.embedding_dims * 2, self.n_classes, 1)
         self.out = nn.Softmax(dim=1)
+    def set_indices(self,indices):
+        self.block_pga1.indice = indices
+
 
     def forward(self, x, prop):
         x_a1 = self.block_a1(x)
