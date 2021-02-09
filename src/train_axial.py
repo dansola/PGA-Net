@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from eval import eval_net
+from eval_axial import eval_net
 from models.axial_unet.axial_unet import AxialUnet
 from models.basic_axial.basic_axialnet import BasicAxial
 from models.basic_pga.basic_pga_net import BasicAxialPGA
@@ -39,16 +39,16 @@ def get_args():
 
 
 def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
-    # train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-    #                 os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
-    # val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-    #               os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
-    train_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                    os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
-                                 'train', img_scale, img_crop)
-    val_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                  os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
-                               'val', img_scale, img_crop)
+    train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                    os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
+    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+    # train_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+    #                 os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
+    #                              'train', img_scale, img_crop)
+    # val_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+    #               os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
+    #                            'val', img_scale, img_crop)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size)
@@ -66,7 +66,6 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
             for batch in train_loader:
                 imgs = batch['image']
                 true_masks = batch['mask']
-                props = batch['prop']
 
                 assert imgs.shape[1] == net.channels, \
                     f'Network has been defined with {net.channels} input channels, ' \
@@ -75,12 +74,10 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
-                props = props.to(device=device, dtype=torch.long)
 
-                # masks_pred = net(imgs)
-                masks_pred = net(imgs, props)
+                masks_pred = net(imgs)
                 probs = F.softmax(masks_pred, dim=1)
-                argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
+                argmx = torch.argmax(masks_pred, dim=1).to(dtype=torch.float32)
 
                 # print(imgs.shape, true_masks.shape, target.shape, masks_pred.shape)
                 # print(torch.unique(target))
@@ -120,7 +117,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                     wandb.log({"Validation Loss": val_loss})
                     wandb.log({"Validation IoU": val_iou})
                     wandb.log({"Validation Accuracy": val_acc})
-                    scheduler.step(val_loss)
+                    # scheduler.step(val_loss)
         # val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
         # wandb.log({"Validation Loss": val_loss})
         # wandb.log({"Validation IoU": val_iou})
@@ -142,8 +139,8 @@ if __name__ == '__main__':
 
     # net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    # net = BasicAxial(3, 3, 10, img_crop=args.crop)
-    net = BasicAxialPGA(3, 3, 10, img_crop=args.crop)
+    net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    # net = BasicAxialPGA(3, 3, 10, img_crop=args.crop)
     wandb.watch(net)
 
     if args.load:

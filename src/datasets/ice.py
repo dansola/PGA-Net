@@ -12,6 +12,124 @@ MEANS = [121.4836, 122.35021, 122.517166]
 STDS = [58.89167, 58.966404, 59.09349]
 
 
+class BasicDatasetIce(Dataset):
+    def __init__(self, imgs_dir, masks_dir, txt_dir, split, scale=1, mask_suffix='', preprocessing=None, augmentation=None):
+        self.imgs_dir = imgs_dir
+        self.masks_dir = masks_dir
+        self.txt_dir = txt_dir
+        self.split = split
+        self.scale = scale
+        self.mask_suffix = mask_suffix
+        self.preprocessing = preprocessing
+        self.augmentation = augmentation
+        assert 0 < scale <= 1, 'Scale must be between 0 and 1'
+
+        if split == "train":
+            fname = os.path.join(self.txt_dir, 'ice_train.txt')
+
+        elif split == "val":
+            fname = os.path.join(self.txt_dir, 'ice_val.txt')
+
+        elif split == "test":
+            fname = os.path.join(self.txt_dir, 'ice_test.txt')
+
+        self.img_ids = [i_id.strip() for i_id in open(fname)]
+        self.files = []
+        for name in self.img_ids:
+            img_file = os.path.join(imgs_dir, name)
+            mask_file = os.path.join(masks_dir, name)
+            self.files.append({
+                "img": img_file,
+                "mask": mask_file,
+                "name": name
+            })
+
+    def __len__(self):
+        return len(self.files)
+
+    @classmethod
+    def preprocess(cls, pil_img, scale, is_img=True):
+        h, w = pil_img.size
+        newW, newH = np.round_(scale * w), np.round_(scale * h)
+        assert newW > 0 and newH > 0, 'Scale is too small'
+        img_nd = np.array(pil_img)
+        img_nd = skimage.transform.resize(img_nd,
+                                          (newW, newH),
+                                          mode='edge',
+                                          anti_aliasing=False,
+                                          anti_aliasing_sigma=None,
+                                          preserve_range=True,
+                                          order=0)
+
+        if len(img_nd.shape) == 2:
+            img_nd = np.expand_dims(img_nd, axis=2)
+
+        # HWC to CHW
+        img_trans = img_nd.transpose((2, 0, 1))
+        if is_img:
+            if img_trans.max() > 1:
+                img_trans = img_trans / 255
+        # else:
+        #    img_trans = rgb2gray(img_trans.transpose((1, 2, 0)))
+
+        return img_trans
+
+    def __getitem__(self, i):
+        datafiles = self.files[i]
+        # print('before')
+        if self.augmentation:
+            # print('after 1')
+            img = cv2.imread(datafiles["img"])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            mask = Image.open(datafiles["mask"])
+            mask = np.array(mask)
+            # print(datafiles["mask"])
+            # print(mask.shape)
+            # print(np.unique(mask))
+
+            # extract certain classes from mask (e.g. cars)
+            masks = [(mask == v) for v in [0, 1, 2]]
+            mask = np.stack(masks, axis=-1).astype('float')
+            # print(mask.shape)
+        else:
+            # print('after 2')
+            img = Image.open(datafiles["img"])
+            mask = Image.open(datafiles["mask"])
+
+        # print(img.size, mask.size)
+        assert img.size == mask.size, \
+            f'Image and mask {i} should be the same size, but are {img.size} and {mask.size}'
+
+        # img = self.preprocess(img, self.scale)
+        # mask = self.preprocess(mask, self.scale, is_img=False)
+
+        if self.augmentation:
+            sample = self.augmentation(image=img, mask=mask)
+            img, mask = sample['image'], sample['mask']
+        else:
+            img = self.preprocess(img, self.scale)
+            mask = self.preprocess(mask, self.scale, is_img=False)
+            # print('after process')
+            # print(img.shape, mask.shape)
+
+        if self.preprocessing:
+            sample = self.preprocessing(image=img, mask=mask)
+            img, mask = sample['image'], sample['mask']
+
+            return torch.from_numpy(img).type(torch.FloatTensor), torch.from_numpy(mask).type(torch.FloatTensor)
+        else:
+
+            # plt.imshow(mask.transpose(1, 2, 0))
+            # plt.title('dataloader')
+            # plt.show()
+
+
+            return {
+                'image': torch.from_numpy(img).type(torch.FloatTensor),
+                'mask': torch.from_numpy(mask).type(torch.FloatTensor)
+            }
+
+
 class Ice(Dataset):
     def __init__(self, imgs_dir, masks_dir, txt_dir, split, scale=1, crop=300):
         self.imgs_dir = imgs_dir

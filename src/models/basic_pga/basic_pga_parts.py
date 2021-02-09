@@ -101,6 +101,7 @@ class PropAttention(nn.Module):
         return img
 
     def add_vec_to_tensor(self, t, inds, vec, obj_dict):
+        # for i, v in zip(inds, vec):
         for i, v in zip(inds.detach().cpu().numpy(), vec):
             obj_ind = obj_dict[i]
             x = obj_ind // self.img_crop

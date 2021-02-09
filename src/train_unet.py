@@ -6,11 +6,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from eval import eval_net
+from eval_unet import eval_net
+from models.unet.unet_model import UNet
 from models.axial_unet.axial_unet import AxialUnet
 from models.basic_axial.basic_axialnet import BasicAxial
 from models.basic_pga.basic_pga_net import BasicAxialPGA
-from datasets.ice import Ice, IceWithProposals
+from datasets.ice import Ice, IceWithProposals, BasicDatasetIce
 from torch.utils.data import DataLoader
 import wandb
 
@@ -43,15 +44,18 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
     #                 os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
     # val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
     #               os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
-    train_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                    os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
-                                 'train', img_scale, img_crop)
-    val_set = IceWithProposals(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                  os.path.join(data_dir, 'txt_files'), os.path.join(data_dir, 'proposals/binary_250_16'),
-                               'val', img_scale, img_crop)
 
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size)
+    dir_img = os.path.join(data_dir, 'imgs')
+    dir_mask = os.path.join(data_dir, 'masks')
+    dir_txt = os.path.join(data_dir, 'txt_files')
+    train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
+    val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+                            drop_last=True)
+
+    # train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    # val_loader = DataLoader(val_set, batch_size=batch_size)
 
     global_step = 0
 
@@ -66,19 +70,16 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
             for batch in train_loader:
                 imgs = batch['image']
                 true_masks = batch['mask']
-                props = batch['prop']
 
-                assert imgs.shape[1] == net.channels, \
-                    f'Network has been defined with {net.channels} input channels, ' \
+                assert imgs.shape[1] == net.n_channels, \
+                    f'Network has been defined with {net.n_channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
-                props = props.to(device=device, dtype=torch.long)
 
-                # masks_pred = net(imgs)
-                masks_pred = net(imgs, props)
+                masks_pred = net(imgs)
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
@@ -120,7 +121,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                     wandb.log({"Validation Loss": val_loss})
                     wandb.log({"Validation IoU": val_iou})
                     wandb.log({"Validation Accuracy": val_acc})
-                    scheduler.step(val_loss)
+                    # scheduler.step(val_loss)
         # val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
         # wandb.log({"Validation Loss": val_loss})
         # wandb.log({"Validation IoU": val_iou})
@@ -141,9 +142,9 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
-    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    net = UNet(n_channels=3, n_classes=3, bilinear=True)
     # net = BasicAxial(3, 3, 10, img_crop=args.crop)
-    net = BasicAxialPGA(3, 3, 10, img_crop=args.crop)
+    # net = BasicAxialPGA(3, 3, 10, img_crop=args.crop)
     wandb.watch(net)
 
     if args.load:

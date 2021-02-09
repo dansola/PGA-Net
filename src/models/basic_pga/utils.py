@@ -24,6 +24,7 @@ def get_image_dicts(prop_flat):
 
 def build_pos_tensors(x, obj_dict, inds):
     obj_inds = np.array(list(obj_dict.values()))[inds.detach().cpu().numpy()]
+    # obj_inds = np.array(list(obj_dict.values()))[inds]
     return x[:, obj_inds]
 
 

@@ -16,7 +16,7 @@ class BasicAxial(nn.Module):
         # self.block5 = Block(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
 
         self.outc = conv1x1(self.embedding_dims, self.n_classes, 1)
-        self.out = nn.Softmax(dim=1)
+        # self.out = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.block1(x)
@@ -26,6 +26,6 @@ class BasicAxial(nn.Module):
         # x = self.block5(x)
 
         logits = self.outc(x)
-        out = self.out(logits)
+        # out = self.out(logits)
 
-        return out
+        return logits
