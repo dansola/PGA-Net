@@ -6,7 +6,7 @@ from metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_i
 
 def eval_net(net, loader, device):
     """Evaluation without the densecrf with the dice coefficient"""
-    net.eval()
+    net.train()
     n_val = len(loader)  # the number of batch
     tot_loss, tot_iou, tot_acc = 0, 0, 0
 

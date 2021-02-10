@@ -49,7 +49,7 @@ class BasicAxialPGA(nn.Module):
         # x = torch.cat((x_a4, x_pga4), dim=1)
 
         logits = self.outc(x)
-        # out = self.out(logits)
+        out = self.out(logits)
 
-        # return out
-        return logits
+        return out
+        # return logits

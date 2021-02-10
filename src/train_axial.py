@@ -136,7 +136,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    print(device)
     # net = AxialUnet(channels=3, n_classes=3, embedding_dims=20, sine_pos=True, img_crop=args.crop)
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
     net = BasicAxial(3, 3, 10, img_crop=args.crop)
