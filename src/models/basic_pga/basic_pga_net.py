@@ -28,14 +28,14 @@ class BasicAxialPGA(nn.Module):
         self.outc = conv1x1(self.embedding_dims * 2, self.n_classes, 1)
         self.out = nn.Softmax(dim=1)
 
-    def forward(self, x, prop):
+    def forward(self, x, obj_dict, bg_dict):
         x_a1 = self.block_a1(x)
-        x_pga1 = self.block_pga1(x, prop)
+        x_pga1 = self.block_pga1(x, obj_dict, bg_dict)
         x = torch.cat((x_a1, x_pga1), dim=1)
         x = self.down1(x)
 
         x_a2 = self.block_a2(x)
-        x_pga2 = self.block_pga2(x, prop)
+        x_pga2 = self.block_pga2(x, obj_dict, bg_dict)
         x = torch.cat((x_a2, x_pga2), dim=1)
         # x = self.down2(x)
         #

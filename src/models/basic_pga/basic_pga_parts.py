@@ -29,7 +29,7 @@ class BlockPGA(nn.Module):
 
         # self.conv3 = conv1x1(self.embedding_dim
 
-    def forward(self, x, prop):
+    def forward(self, x, obj_dict, bg_dict):
         # print(x.shape)
         x = self.conv1(x)
         x = self.bn1(x)
@@ -41,7 +41,7 @@ class BlockPGA(nn.Module):
         # x = self.bn3(x)
         # x = self.relu(x)
 
-        x_attn = self.attn(x, prop)
+        x_attn = self.attn(x, obj_dict, bg_dict)
         x_attn = self.relu(x_attn)
 
         x = torch.cat((x_attn, x), dim=1)
@@ -109,10 +109,8 @@ class PropAttention(nn.Module):
             t[:, :, x, y] = v
         return t
 
-    def forward(self, x, prop, kv=None):
+    def forward(self, x, obj_dict, bg_dict, kv=None):
         x = x.clone().detach()
-        prop_flat = prop.flatten()
-        obj_dict, bg_dict = get_image_dicts(prop_flat)
 
         img_heads = torch.chunk(x, self.heads, dim=1)
         head_list = []
