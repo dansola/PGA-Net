@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -64,9 +65,13 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
         epoch_loss = 0
         with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
+
+                # start_time = time.time()
                 imgs = batch['image']
                 true_masks = batch['mask']
-                props = batch['prop']
+                obj_dict, bg_dict = batch['obj_dict'], batch['bg_dict']
+                obj_dict = {k: v.item() for k, v in obj_dict.items()}
+                bg_dict = {k: v.item() for k, v in bg_dict.items()}
 
                 assert imgs.shape[1] == net.channels, \
                     f'Network has been defined with {net.channels} input channels, ' \
@@ -75,20 +80,13 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
-                props = props.to(device=device, dtype=torch.long)
+                # print(f"Data loading finished in {time.time() - start_time} seconds.")
 
-                # masks_pred = net(imgs)
-                masks_pred = net(imgs, props)
+                # start_time = time.time()
+                masks_pred = net(imgs, obj_dict, bg_dict)
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
-
-                # print(imgs.shape, true_masks.shape, target.shape, masks_pred.shape)
-                # print(torch.unique(target))
-                # fig, axs = plt.subplots(3, 1)
-                # axs[0].imshow(imgs.squeeze(0).detach().cpu().numpy()[:, :, 0])
-                # axs[1].imshow(target.squeeze(0).cpu().detach().numpy())
-                # axs[2].imshow(masks_pred.squeeze(0).permute(1, 2, 0).cpu().detach().numpy()[:, :, 0])
-                # plt.show()
+                # print(f"Net prediction finished in {time.time() - start_time} seconds.")
 
                 example_images = [wandb.Image(imgs[0], caption='Image'),
                                   wandb.Image(target.to(dtype=torch.float)[0],
@@ -98,6 +96,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 wandb.log({"Examples": example_images})
 
+                # start_time = time.time()
                 loss = criterion(masks_pred, target.squeeze(1))
                 wandb.log({"Training Loss": loss})
                 epoch_loss += loss.item()
@@ -111,6 +110,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 pbar.update(imgs.shape[0])
                 global_step += 1
+                # print(f"Backpropigation finished in {time.time() - start_time} seconds.")
+
                 if len(train_set) > 10:
                     n = 10
                 else:
@@ -120,7 +121,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                     wandb.log({"Validation Loss": val_loss})
                     wandb.log({"Validation IoU": val_iou})
                     wandb.log({"Validation Accuracy": val_acc})
-                    scheduler.step(val_loss)
+                    # scheduler.step(val_loss)
         # val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
         # wandb.log({"Validation Loss": val_loss})
         # wandb.log({"Validation IoU": val_iou})

@@ -277,12 +277,14 @@ class IceWithProposals(Dataset):
         img = img.permute(2, 0, 1).contiguous()
 
         prop_flat = prop.flatten()
+        # obj_dict, bg_dict = get_image_dicts(prop_flat)
         obj_dict = self.build_dict(prop_flat, 1)
         bg_dict = self.build_dict(prop_flat, 0)
 
         return {
             'image': img,
             'mask': mask,
+            'prop': prop,
             'obj_dict': obj_dict,
             'bg_dict': bg_dict
         }

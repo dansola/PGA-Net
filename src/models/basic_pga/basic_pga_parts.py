@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import time
 from models.basic_pga.utils import get_image_dicts, build_pos_tensors, build_rand_inds
 
 
@@ -112,27 +113,34 @@ class PropAttention(nn.Module):
     def forward(self, x, obj_dict, bg_dict, kv=None):
         x = x.clone().detach()
 
-        img_heads = torch.chunk(x, self.heads, dim=1)
+        # start_time = time.time()
+        img_heads = torch.chunk(x.cpu(), self.heads, dim=1)
         head_list = []
         for inds, h in zip(self.rand_inds, img_heads):
             head_list.append(self.construct(h, obj_dict, bg_dict, inds))
 
-        out = torch.cat(head_list, dim=0).view(self.heads * self.img_crop, self.img_crop, -1)
+        out = torch.cat(head_list, dim=0).view(self.heads * self.img_crop, self.img_crop, -1).cuda()
+        # print(f"Constructing finished in {time.time() - start_time} seconds.")
 
+        # start_time = time.time()
         kv = out if kv is None else kv
         q, k, v = (self.to_q(out), *self.to_kv(kv).chunk(2, dim=-1))
         dots = torch.einsum('bie,bje->bij', q, k) * (self.dim_heads ** -0.5)
         dots = dots.softmax(dim=-1)
         out = torch.einsum('bij,bje->bie', dots, v)
 
-        out = out.view(self.heads * self.img_crop, -1, self.img_crop)
+        out = out.view(self.heads * self.img_crop, -1, self.img_crop).cpu()
         ts = torch.chunk(out, self.heads, dim=0)
+        # print(f"Matrix math finished in {time.time() - start_time} seconds.")
 
+        # start_time = time.time()
         new_img_list = []
         for t, img_head, inds in zip(ts, img_heads, self.rand_inds):
             new_img_list.append(self.destruct(t, img_head, obj_dict, bg_dict, inds))
-        out_final = torch.cat(new_img_list, dim=1).permute(0, 2, 3, 1).contiguous()
+        out_final = torch.cat(new_img_list, dim=1).permute(0, 2, 3, 1).contiguous().cuda()
         out_final = self.to_out(out_final)
+        # print(f"Destructing finished in {time.time() - start_time} seconds.")
+
         return out_final.permute(0, 3, 1, 2).contiguous()
 
 # class _PropAttention(nn.Module):
