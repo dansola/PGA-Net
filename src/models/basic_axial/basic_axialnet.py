@@ -13,19 +13,15 @@ class BasicAxial(nn.Module):
         self.block2 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
         self.block3 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
         self.block4 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
-        # self.block5 = Block(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
 
         self.outc = conv1x1(self.embedding_dims, self.n_classes, 1)
-        # self.out = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.block1(x)
         x = self.block2(x)
         x = self.block3(x)
         x = self.block4(x)
-        # x = self.block5(x)
 
         logits = self.outc(x)
-        # out = self.out(logits)
 
         return logits

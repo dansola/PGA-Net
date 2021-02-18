@@ -1,7 +1,6 @@
 import torch
 from torch import nn
-from models.axial_unet.utils import AxialPositionalEmbedding, PositionalEncodingPermute2D
-from models.axial_unet.axial_attention import AxialAttention, AxialImageTransformer
+from models.axial_attention.axial_attention import AxialAttention, AxialImageTransformer
 
 
 def conv1x1(in_planes, out_planes, stride=1):
@@ -20,28 +19,16 @@ class BlockAxial(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
-        # self.pos = PositionalEncodingPermute2D(self.embedding_dims)
-        # self.pos = AxialPositionalEmbedding(self.embedding_dims, self.img_shape)
         self.attn = AxialAttention(dim=self.embedding_dims, dim_index=1, heads=2, num_dimensions=2,
                                    sum_axial_out=True)
 
         self.conv2 = conv1x1(self.embedding_dims_double, self.embedding_dims)
-        # self.conv2 = conv1x1(self.embedding_dims, self.embedding_dims)
         self.bn2 = nn.BatchNorm2d(self.embedding_dims)
 
-        # self.conv3 = conv1x1(self.embedding_dim
-
     def forward(self, x):
-        # print(x.shape)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-
-        # pos = self.pos(x)
-        # x = torch.cat((pos, x), dim=1)
-        # x = self.conv3(x)
-        # x = self.bn3(x)
-        # x = self.relu(x)
 
         x_attn = self.attn(x)
         x_attn = self.relu(x_attn)

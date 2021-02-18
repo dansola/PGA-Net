@@ -1,0 +1,24 @@
+{
+    "os": "Linux-5.4.0-65-generic-x86_64-with-glibc2.10",
+    "python": "3.8.5",
+    "heartbeatAt": "2021-02-18T22:29:00.961203",
+    "startedAt": "2021-02-18T22:29:00.202379",
+    "docker": null,
+    "gpu": "GeForce GTX 1060 6GB",
+    "gpu_count": 1,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "src/train/train_unet.py",
+    "program": "train_unet.py",
+    "git": {
+        "remote": "https://github.com/dansola/PGA-Net.git",
+        "commit": "43827c41acdb70d7a1a7fc2d3aa852be18aa550f"
+    },
+    "email": "soladbs@gmail.com",
+    "root": "/home/dsola/repos/PGA-Net",
+    "host": "dsola",
+    "username": "dsola",
+    "executable": "/home/dsola/anaconda3/envs/PGA-Net/bin/python"
+}

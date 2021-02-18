@@ -7,7 +7,6 @@ from torch.utils.data import Dataset
 from torchvision.transforms import transforms
 import torch
 import skimage.transform
-from models.basic_pga.utils import get_image_dicts
 
 MEANS = [121.4836, 122.35021, 122.517166]
 STDS = [58.89167, 58.966404, 59.09349]
@@ -65,13 +64,10 @@ class BasicDatasetIce(Dataset):
         if len(img_nd.shape) == 2:
             img_nd = np.expand_dims(img_nd, axis=2)
 
-        # HWC to CHW
         img_trans = img_nd.transpose((2, 0, 1))
         if is_img:
             if img_trans.max() > 1:
                 img_trans = img_trans / 255
-        # else:
-        #    img_trans = rgb2gray(img_trans.transpose((1, 2, 0)))
 
         return img_trans
 
@@ -81,7 +77,6 @@ class BasicDatasetIce(Dataset):
         img = Image.open(datafiles["img"])
         mask = Image.open(datafiles["mask"])
 
-        # print(img.size, mask.size)
         assert img.size == mask.size, \
             f'Image and mask {i} should be the same size, but are {img.size} and {mask.size}'
 
@@ -126,7 +121,7 @@ class Ice(Dataset):
     def __len__(self):
         return len(self.files)
 
-    def resize(self, pil_img, is_img=True):
+    def resize(self, pil_img):
         h, w = pil_img.size
         newW, newH = np.round_(self.scale * w), np.round_(self.scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small'
@@ -141,14 +136,11 @@ class Ice(Dataset):
         if len(img_nd.shape) == 2:
             img_nd = np.expand_dims(img_nd, axis=2)
 
-        # if is_img and img_nd.max() > 1:
-        #     img_nd = img_nd / 255
-
         return img_nd
 
     def process(self, img, mask):
         img = self.resize(img)
-        mask = self.resize(mask, is_img=False)
+        mask = self.resize(mask)
 
         img = transforms.CenterCrop(self.crop)(Image.fromarray(img.astype(np.uint8)))
         mask = transforms.CenterCrop(self.crop)(Image.fromarray(mask.squeeze(-1).astype(np.uint8)))

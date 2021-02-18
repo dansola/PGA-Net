@@ -7,7 +7,7 @@ from PIL import Image
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train AxialUnet on images and target masks',
+    parser = argparse.ArgumentParser(description='Convert DeepMask proposals into numpy masks.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-s', '--save-directory', metavar='S', type=str, default='../data/proposals/binary',
                         help='Directory where proposals will be saved.', dest='save_dir')
