@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 from eval.eval_axial import eval_net
-from models.basic_axial.basic_axialnet import BasicAxial, BasicAxialUNet
+from models.basic_axial.basic_axialnet import BasicAxial, AxialUNetSmall, AxialUNetMed, AxialUNet
 from datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
@@ -35,7 +35,7 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=320,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
@@ -121,7 +121,9 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = BasicAxial(3, 3, 10)
-    net = BasicAxialUNet(3, 3, 10)
+    net = AxialUNetSmall(3, 3, 10)
+    # net = AxialUNetMed(3, 3, 10)
+    # net = AxialUNet(3, 3, 10)
     wandb.watch(net)
 
     if args.load:
