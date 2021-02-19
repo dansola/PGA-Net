@@ -15,7 +15,7 @@ to guide pixel-wise attention.  Rather than forcing pixels of a certain row or c
 pixels of either all object or all background (according to the object proposal) to attend to one another.  
 
 ## Implementation
-Images must first be passed through DeepMask or SharpMask to get object proposals ([officail link](https://github.com/facebookresearch/deepmask), [pytorch link](https://github.com/foolwood/deepmask-pytorch)).
+Images must first be passed through DeepMask or SharpMask to get object proposals ([official link](https://github.com/facebookresearch/deepmask), [pytorch link](https://github.com/foolwood/deepmask-pytorch)).
 These proposals can then be converted to a proposal mask:
    ```
    cd src/datasets
@@ -61,6 +61,6 @@ Axial network has 5k trainable parameters.
  
 ## Acknowledgments
 
-DeepMask proposals for testing were easily built with a pytorch implementation by [Qiang Wang](https://github.com/foolwood/deepmask-pytorch) where he included pretrained weights.
+DeepMask proposals for testing were easily built with a pytorch implementation by [Qiang Wang](https://github.com/foolwood/deepmask-pytorch) where he included pre-trained weights.
 
 Axial attention module was based on the implementation by [Phil Wang](https://github.com/lucidrains/axial-attention).
