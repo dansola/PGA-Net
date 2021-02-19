@@ -40,26 +40,26 @@ Pixels that reside within
 an object proposal are selected randomly in order to assign pixels to attend to one another.  To do this, proposals are converted to 
 dictionaries of indices to ensure that the image can be rebuilt after the attention module has re-weighted a tensor.
 
-![alt text](https://github.com/dansola/PGA-Net/blob/master/images/ran_ind.png)
+![alt text](https://github.com/dansola/PGA-Net/blob/main/images/rand_ind.png)
 
 To be able to compare PGA with axial attention, the PGA module randomly selects *w* pixels for an attention tensor, and creates *h* attention tensors per head (*w* and *h* are the width and height of the image).
 The random indices are created when the model is initialized and then they are fixed during training and saved with the model wights.
 
-![alt text](https://github.com/dansola/PGA-Net/blob/master/images/pga.png)
+![alt text](https://github.com/dansola/PGA-Net/blob/main/images/pga.png)
 
 A PGA block can be created similar to an axial block and can be stacked for image classification or segmentation.  
 Due to inaccuracies in the object proposals, I opted to build an AxialPGA network where an image is passed to an axial block and 
 a PGA block in parallel, their output is concatenated, and a 1x1 convolution weights the contribution of each.
 
-![alt text](https://github.com/dansola/PGA-Net/blob/master/images/pga_block.png)
+![alt text](https://github.com/dansola/PGA-Net/blob/main/images/pga_block.png)
 
 When comparing a 2 layer AxialPGA network (2 PGA block and 2 axial block) to a 4 layer Axial network for segmentation, the AxialPGA network
 converges faster due to the guiding of the object proposals.  In this example the AxialPGA network only has 3.5k trainable parameters while the 
 Axial network has 5k trainable parameters.
 
-![alt text](https://github.com/dansola/PGA-Net/blob/master/images/converge.png)
+![alt text](https://github.com/dansola/PGA-Net/blob/main/images/converge.png)
  
-## Acknowledgements
+## Acknowledgments
 
 DeepMask proposals for testing were easily built with a pytorch implementation by [Qiang Wang](https://github.com/foolwood/deepmask-pytorch) where he included pretrained weights.
 
