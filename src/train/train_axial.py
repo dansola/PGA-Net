@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 from eval.eval_axial import eval_net
-from models.basic_axial.basic_axialnet import BasicAxial
+from models.basic_axial.basic_axialnet import BasicAxial, BasicAxialUNet
 from datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
@@ -120,7 +120,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    # net = BasicAxial(3, 3, 10)
+    net = BasicAxialUNet(3, 3, 10)
     wandb.watch(net)
 
     if args.load:

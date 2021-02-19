@@ -1,18 +1,17 @@
 from torch import nn
-from models.basic_axial.basic_axial_parts import BlockAxial, conv1x1
+from models.basic_axial.basic_axial_parts import BlockAxial, conv1x1, BlockAxialDown, BlockAxialUp
 
 class BasicAxial(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims, img_crop=320):
+    def __init__(self, channels, n_classes, embedding_dims):
         super(BasicAxial, self).__init__()
         self.channels = channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
-        self.img_crop = img_crop
 
-        self.block1 = BlockAxial(self.channels, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
-        self.block2 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
-        self.block3 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
-        self.block4 = BlockAxial(self.embedding_dims, self.embedding_dims, img_shape=(self.img_crop, self.img_crop))
+        self.block1 = BlockAxial(self.channels, self.embedding_dims)
+        self.block2 = BlockAxial(self.embedding_dims, self.embedding_dims)
+        self.block3 = BlockAxial(self.embedding_dims, self.embedding_dims)
+        self.block4 = BlockAxial(self.embedding_dims, self.embedding_dims)
 
         self.outc = conv1x1(self.embedding_dims, self.n_classes, 1)
 
@@ -23,5 +22,26 @@ class BasicAxial(nn.Module):
         x = self.block4(x)
 
         logits = self.outc(x)
+
+        return logits
+
+
+class BasicAxialUNet(nn.Module):
+    def __init__(self, channels, n_classes, embedding_dims):
+        super(BasicAxialUNet, self).__init__()
+        self.channels = channels
+        self.n_classes = n_classes
+        self.embedding_dims = embedding_dims
+
+        self.encode = BlockAxial(self.channels, self.embedding_dims)
+        self.decode = conv1x1(self.embedding_dims, 3)
+        self.down = BlockAxialDown(self.embedding_dims, self.embedding_dims * 2)
+        self.up = BlockAxialUp(self.embedding_dims * 2, self.embedding_dims)
+
+    def forward(self, x):
+        x1 = self.encode(x)
+        x2 = self.down(x1)
+        x3 = self.up(x2, x1)
+        logits = self.decode(x3)
 
         return logits

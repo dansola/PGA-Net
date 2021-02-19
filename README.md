@@ -6,7 +6,7 @@ Transformers are extremely powerful tools used in language models and are now be
 Transformers offer a nice alternative to CNNs as they can immediately find global context in an image unlike convolutional kernels which require down-sampling.
 A bottleneck of transformers however is the quadratic time efficiency of the attention mechanism making it unfeasible on images where
 each pixel is treated as an element in the sequence.  We therefore must limit which pixels attend to one another if we wish to implement 
-attention on images with the current available hardware.
+attention on images with the hardware currently available.
 
 This is a library I built to replicate the axial attention module in [Axial-DeepLab](https://arxiv.org/abs/2003.07853)
 and improve upon it with something I call proposal guided attention (PGA).  PGA uses class agnostic image proposals 
