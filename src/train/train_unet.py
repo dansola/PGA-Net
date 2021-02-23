@@ -25,7 +25,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='../data',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=40,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -35,7 +35,7 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=320,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
