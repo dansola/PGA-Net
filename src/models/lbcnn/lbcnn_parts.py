@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class ConvLBP(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0.5):
-        super().__init__(in_channels, out_channels, kernel_size, padding=1, bias=False)
+        super().__init__(in_channels, out_channels, kernel_size, padding=1, bias=False, dilation=1)
         weights = next(self.parameters())
         matrix_proba = torch.FloatTensor(weights.data.shape).fill_(0.5)
         binary_weights = torch.bernoulli(matrix_proba) * 2 - 1

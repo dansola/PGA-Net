@@ -156,6 +156,35 @@ class AxialUNetLBC(nn.Module):
         return logits
 
 
+class SmallAxialUNetLBC(nn.Module):
+    def __init__(self, channels, n_classes, embedding_dims):
+        super(SmallAxialUNetLBC, self).__init__()
+        self.channels = channels
+        self.n_classes = n_classes
+        self.embedding_dims = embedding_dims
+
+        self.encode = BlockAxialLBC(self.channels, self.embedding_dims)
+
+        self.down1 = AxialDownLBC(self.embedding_dims, self.embedding_dims * 2)
+        self.down2 = AxialDownLBC(self.embedding_dims * 2, self.embedding_dims * 4)
+        self.up1 = AxialUpLBC(self.embedding_dims * 4, self.embedding_dims * 2)
+        self.up2 = AxialUpLBC(self.embedding_dims * 2, self.embedding_dims)
+
+        self.decode = conv1x1(self.embedding_dims, 3)
+
+    def forward(self, x):
+        x1 = self.encode(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+
+        x4 = self.up1(x3, x2)
+        x5 = self.up2(x4, x1)
+
+        logits = self.decode(x5)
+
+        return logits
+
+
 class BlockAxialLBC_Add(nn.Module):
     def __init__(self, channels, embedding_dims, heads=2):
         super(BlockAxialLBC_Add, self).__init__()
@@ -236,6 +265,38 @@ class BasicAxialLBC_Add(nn.Module):
         x = self.block2(x)
         x = self.block3(x)
         x = self.block4(x)
+
+        logits = self.outc(x)
+        return logits
+
+
+class LargeAxialLBC(nn.Module):
+    def __init__(self, channels, n_classes, embedding_dims):
+        super(LargeAxialLBC, self).__init__()
+        self.channels = channels
+        self.n_classes = n_classes
+        self.embedding_dims = embedding_dims
+
+        self.block1 = BlockAxialLBC(self.channels, self.embedding_dims)
+        self.block2 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block3 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block4 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block5 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block6 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block7 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+        self.block8 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
+
+        self.outc = conv1x1(self.embedding_dims, self.n_classes, 1)
+
+    def forward(self, x):
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.block5(x)
+        x = self.block6(x)
+        x = self.block7(x)
+        x = self.block8(x)
 
         logits = self.outc(x)
         return logits
