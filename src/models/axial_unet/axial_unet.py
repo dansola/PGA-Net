@@ -1,5 +1,5 @@
 from torch import nn
-from models.axial_unet.axial_unet_parts import Embed, AttentionDown, AttentionUp, conv1x1
+from src.models.axial_unet.axial_unet_parts import Embed, AttentionDown, AttentionUp, conv1x1
 
 
 class AxialUnet(nn.Module):

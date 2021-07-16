@@ -1,7 +1,7 @@
 import torch
 from torch import nn
-from models.basic_axial.basic_axial_parts import BlockAxial, conv1x1
-from models.basic_pga.basic_pga_parts import BlockPGA
+from src.models.basic_axial.basic_axial_parts import BlockAxial, conv1x1
+from src.models.basic_pga.basic_pga_parts import BlockPGA
 
 
 class BasicAxialPGA(nn.Module):

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.axial_attention.axial_attention import AxialAttention
+from src.models.axial_attention.axial_attention import AxialAttention
 
 
 def conv1x1(in_planes, out_planes, stride=1):

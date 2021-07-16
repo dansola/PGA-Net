@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from models.basic_pga.utils import get_image_dicts, build_pos_tensors, build_rand_inds
+from src.models.basic_pga.utils import get_image_dicts, build_pos_tensors, build_rand_inds
 
 
 def conv1x1(in_planes, out_planes, stride=1):
