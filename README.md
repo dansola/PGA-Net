@@ -26,7 +26,7 @@ These proposals are incorporated into a Dataset class where a random index dicti
 Then PGA can be used on an image and its corresponding proposal dictionaries.
 
 ```python
-from models.basic_pga.basic_pga_parts import BlockPGA
+from src.models.basic_pga.basic_pga_parts import BlockPGA
 import torch
 
 img = torch.rand(1,3,500,500) # test image

@@ -11,9 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from eval.eval_pga import eval_net
-from models.basic_pga.basic_pga_net import BasicAxialPGA
-from datasets.ice import IceWithProposals
+from src.eval.eval_pga import eval_net
+from src.models.basic_pga.basic_pga_net import BasicAxialPGA
+from src.datasets.ice import IceWithProposals
 from torch.utils.data import DataLoader
 import wandb
 

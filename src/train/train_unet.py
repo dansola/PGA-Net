@@ -11,9 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from eval.eval_unet import eval_net
-from models.unet.unet_model import UNet
-from datasets.ice import BasicDatasetIce
+from src.eval.eval_unet import eval_net
+from src.models.unet.unet_model import UNet
+from src.datasets.ice import BasicDatasetIce
 from torch.utils.data import DataLoader
 import wandb
 

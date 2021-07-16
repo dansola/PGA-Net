@@ -11,9 +11,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from eval.eval_axial import eval_net
-from models.basic_axial.basic_axialnet import BasicAxial
-from datasets.ice import Ice
+from src.eval.eval_axial import eval_net
+from src.models.basic_axial.basic_axialnet import BasicAxial
+from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
 

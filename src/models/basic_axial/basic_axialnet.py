@@ -1,5 +1,5 @@
 from torch import nn
-from models.basic_axial.basic_axial_parts import BlockAxial, conv1x1
+from src.odels.basic_axial.basic_axial_parts import BlockAxial, conv1x1
 
 class BasicAxial(nn.Module):
     def __init__(self, channels, n_classes, embedding_dims, img_crop=320):
