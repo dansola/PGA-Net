@@ -145,6 +145,3 @@ wandb/**
 /src/train/wandb/**
 .npy
 *.npy
-/src/data/gtFine/**
-#.png
-#*.png

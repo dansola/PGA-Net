@@ -12,8 +12,7 @@ import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 from eval.eval_axial import eval_net
-from models.basic_axial.basic_axialnet import BasicAxial, AxialUNetSmall, AxialUNetMed, AxialUNet
-from models.lbcnn.axial_lbcnn import BasicAxialLBC, BasicAxialLBC_Add, AxialUNetLBC, LargeAxialLBC, SmallAxialUNetLBC
+from models.basic_axial.basic_axialnet import BasicAxial
 from datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
@@ -26,7 +25,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='../data',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -34,7 +33,7 @@ def get_args():
                         help='Learning rate', dest='lr')
     parser.add_argument('-f', '--load', dest='load', type=str, default=False,
                         help='Load model from a .pth file')
-    parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.25,
+    parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
     parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
                         help='Height and width of images and masks.')
@@ -121,15 +120,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = BasicAxial(3, 3, 10)
-    # net = AxialUNetSmall(3, 3, 10)
-    # net = BasicAxialLBC_Add(3, 3, 10)
-    # net = AxialUNetLBC(3, 3, 10)
-    # net = BasicAxialLBC(3, 3, 10)
-    net = SmallAxialUNetLBC(3, 3, 10)
-    # net = LargeAxialLBC(3, 3, 10)
-    # net = AxialUNetMed(3, 3, 10)
-    # net = AxialUNet(3, 3, 10)
+    net = BasicAxial(3, 3, 10, img_crop=args.crop)
     wandb.watch(net)
 
     if args.load:
