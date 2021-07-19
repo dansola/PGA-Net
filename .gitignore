@@ -133,7 +133,7 @@ dmypy.json
 
 */.idea/inspectionProfiles/Project_Default.xml
 *.keep
-*.ipynb
+#*.ipynb
 *.pth
 .pth
 
