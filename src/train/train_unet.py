@@ -23,7 +23,7 @@ wandb.init()
 def get_args():
     parser = argparse.ArgumentParser(description='Train AxialUnet on images and target masks',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='../data',
+    parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
                         help='Number of epochs', dest='epochs')

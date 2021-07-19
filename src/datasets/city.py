@@ -7,7 +7,7 @@ import skimage.transform
 
 from torch.utils import data
 
-from datasets.utils import recursive_glob, Compose, RandomHorizontallyFlip, RandomRotate, Scale
+from src.datasets.utils import recursive_glob, Compose, RandomHorizontallyFlip, RandomRotate, Scale
 
 
 class City(data.Dataset):
@@ -126,7 +126,7 @@ class City(data.Dataset):
             "bicycle",
         ]
 
-        self.ignore_index = 250
+        self.ignore_index = 19
         self.class_map = dict(zip(self.valid_classes, range(19)))
 
         if not self.files[split]:
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     augmentations = Compose([Scale(2048), RandomRotate(10), RandomHorizontallyFlip(0.5)])
 
     local_path = "/datasets01/cityscapes/112817/"
-    dst = cityscapesLoader(local_path, is_transform=True, augmentations=augmentations)
+    dst = City(local_path, is_transform=True, augmentations=augmentations)
     bs = 4
     trainloader = data.DataLoader(dst, batch_size=bs, num_workers=0)
     for i, data_samples in enumerate(trainloader):
