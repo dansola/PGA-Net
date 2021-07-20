@@ -1,6 +1,8 @@
 import os
 import sys
 
+from src.train.utils import load_ckp
+
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
@@ -41,7 +43,7 @@ def get_args():
     return parser.parse_args()
 
 
-def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
+def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True):
     train_set = City(data_dir, split='train', is_transform=True)
     val_set = City(data_dir, split='val', is_transform=True)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
@@ -50,7 +52,6 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
     global_step = 0
 
-    optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss(ignore_index=255)
 
@@ -74,16 +75,23 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
-                example_images = [wandb.Image(imgs[0], caption='Image'),
-                                  wandb.Image(target.to(dtype=torch.float)[0],
-                                              caption='True Mask'),
-                                  wandb.Image(argmx[0],
-                                              caption='Predicted Mask')]
+                try:
+                    example_images = [wandb.Image(imgs[0], caption='Image'),
+                                      wandb.Image(target.to(dtype=torch.float)[0],
+                                                  caption='True Mask'),
+                                      wandb.Image(argmx[0],
+                                                  caption='Predicted Mask')]
 
-                wandb.log({"Examples": example_images})
+                    wandb.log({"Examples": example_images})
+                except:
+                    print("wandb failed to log images...skipping...")
 
                 loss = criterion(masks_pred, target.squeeze(1))
-                wandb.log({"Training Loss": loss})
+                try:
+                    wandb.log({"Training Loss": loss})
+                except:
+                    print("wandb failed to log training loss...skipping...")
+
                 epoch_loss += loss.item()
 
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
@@ -114,26 +122,35 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 os.mkdir('../checkpoints/')
             except OSError:
                 pass
-            torch.save(net.state_dict(),
-                       '../checkpoints/' + f'epoch{epoch + 1}.pth')
+            checkpoint = {
+                'epoch': epoch + 1,
+                'state_dict': net.state_dict(),
+                'optimizer': optimizer.state_dict()
+            }
+            # torch.save(net.state_dict(),
+            #            '../checkpoints/' + f'epoch{epoch + 1}.pth')
+            torch.save(checkpoint,
+                       '../checkpoints/' + f'epoch{epoch + 1}-net-optimizer.pth')
 
 
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # device='cpu'
+
     net = UNet(n_channels=3, n_classes=19, bilinear=True)
+    optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
     wandb.watch(net)
 
     if args.load:
-        net.load_state_dict(torch.load(args.load, map_location=device))
+        # net.load_state_dict(torch.load(args.load, map_location=device))
+        net, optimizer, epoch = load_ckp(args.load, net, optimizer)
+        print(f"Resuming training at epoch {epoch} of {args.load}")
 
     net.to(device=device)
 
     try:
-        train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
-                  device=device,
-                  img_scale=args.scale, img_crop=args.crop)
+        train_net(net=net, optimizer=optimizer, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize,
+                  lr=args.lr, device=device)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:
