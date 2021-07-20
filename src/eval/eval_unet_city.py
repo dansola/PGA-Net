@@ -27,7 +27,7 @@ def eval_net(net, loader, device):
 
             tot_iou += jaccard_index(hist)[0]
             tot_acc += per_class_pixel_accuracy(hist)[0]
-            tot_loss += F.cross_entropy(mask_pred, true_masks.squeeze(1)).item()
+            tot_loss += F.cross_entropy(mask_pred, true_masks.squeeze(1), ignore_index=255).item()
             pbar.update()
 
     net.train()

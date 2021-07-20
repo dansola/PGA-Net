@@ -52,7 +52,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=255)
 
     for epoch in range(epochs):
         net.train()
@@ -101,9 +101,12 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                     n = 1
                 if global_step % (len(train_set) // (n * batch_size)) == 0:
                     val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
-                    wandb.log({"Validation Loss": val_loss})
-                    wandb.log({"Validation IoU": val_iou})
-                    wandb.log({"Validation Accuracy": val_acc})
+                    try:
+                        wandb.log({"Validation Loss": val_loss})
+                        wandb.log({"Validation IoU": val_iou})
+                        wandb.log({"Validation Accuracy": val_acc})
+                    except:
+                        print('wandb failed to log validation metrics...skipping...')
                     # scheduler.step(val_loss)
 
         if save_cp:
@@ -119,7 +122,7 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # device='cpu'
-    net = UNet(n_channels=3, n_classes=20, bilinear=True)
+    net = UNet(n_channels=3, n_classes=19, bilinear=True)
     wandb.watch(net)
 
     if args.load:

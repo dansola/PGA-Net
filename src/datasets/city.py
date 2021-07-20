@@ -104,29 +104,29 @@ class City(data.Dataset):
             33,
         ]
         self.class_names = [
-            "unlabelled",
-            "road",
-            "sidewalk",
-            "building",
-            "wall",
-            "fence",
-            "pole",
-            "traffic_light",
-            "traffic_sign",
-            "vegetation",
-            "terrain",
-            "sky",
-            "person",
-            "rider",
-            "car",
-            "truck",
-            "bus",
-            "train",
-            "motorcycle",
-            "bicycle",
+            "unlabelled",  # N/A
+            "road",  # 0
+            "sidewalk",  # 1
+            "building",  # 2
+            "wall",  # 3
+            "fence",  # 4
+            "pole",  # 5
+            "traffic_light",  # 6
+            "traffic_sign",  # 7
+            "vegetation",  # 8
+            "terrain",  # 9
+            "sky",  # 10
+            "person",  # 11
+            "rider",  # 12
+            "car",  # 13
+            "truck",  # 14
+            "bus",  # 15
+            "train",  # 16
+            "motorcycle",  # 17
+            "bicycle",  # 18
         ]
 
-        self.ignore_index = 19
+        self.ignore_index = 255
         self.class_map = dict(zip(self.valid_classes, range(19)))
 
         if not self.files[split]:
