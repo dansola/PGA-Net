@@ -6,7 +6,7 @@ from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jacca
 
 def eval_net(net, loader, device):
     """Evaluation without the densecrf with the dice coefficient"""
-    net.eval()
+    net.train()
     n_val = len(loader)
     tot_loss, tot_iou, tot_acc = 0, 0, 0
 
@@ -22,7 +22,6 @@ def eval_net(net, loader, device):
 
             probs = F.softmax(mask_pred, dim=1)
             argmx = torch.argmax(probs, dim=1)
-
             hist = _fast_hist(true_masks.squeeze(0).squeeze(0), argmx.squeeze(0).to(dtype=torch.long), 19)
 
             tot_iou += jaccard_index(hist)[0]

@@ -1,7 +1,7 @@
 import os
 import sys
 
-from src.train.utils import load_ckp
+from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -13,8 +13,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from src.eval.eval_unet_city import eval_net
-from src.models.unet.unet_model import UNet
+from src.eval.eval_axial_city import eval_net
+from src.models.basic_axial.basic_axialnet import BasicAxial
 from src.datasets.city import City
 from torch.utils.data import DataLoader
 import wandb
@@ -31,7 +31,7 @@ def get_args():
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
-    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
+    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.001,
                         help='Learning rate', dest='lr')
     parser.add_argument('-f', '--load', dest='load', type=str, default=False,
                         help='Load model from a .pth file')
@@ -43,9 +43,9 @@ def get_args():
     return parser.parse_args()
 
 
-def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True):
-    train_set = City(data_dir, split='train', is_transform=True)
-    val_set = City(data_dir, split='val', is_transform=True)
+def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, save_cp=True):
+    train_set = City(data_dir, split='train', is_transform=True, img_size=(128, 256))
+    val_set = City(data_dir, split='val', is_transform=True, img_size=(128, 256))
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                             drop_last=True)
@@ -62,8 +62,8 @@ def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, lr=0.00
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
+                assert imgs.shape[1] == net.channels, \
+                    f'Network has been defined with {net.channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
@@ -134,15 +134,12 @@ def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, lr=0.00
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    net = UNet(n_channels=3, n_classes=19, bilinear=True)
+    net = SmallAxialUNetLBC(3, 19, 10)
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
     wandb.watch(net)
 
     if args.load:
-        # net.load_state_dict(torch.load(args.load, map_location=device))
-        net, optimizer, epoch = load_ckp(args.load, net, optimizer)
-        print(f"Resuming training at epoch {epoch} of {args.load}")
+        net.load_state_dict(torch.load(args.load, map_location=device))
 
     net.to(device=device)
 
@@ -150,7 +147,13 @@ if __name__ == '__main__':
         train_net(net=net, optimizer=optimizer, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize,
                   device=device)
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), '../INTERRUPTED.pth')
+        checkpoint = {
+            'state_dict': net.state_dict(),
+            'optimizer': optimizer.state_dict()
+        }
+        torch.save(checkpoint,
+                   '../INTERRUPTED-net-optimizer.pth')
+        # torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:
             sys.exit(0)
         except SystemExit:
