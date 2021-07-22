@@ -17,8 +17,8 @@ N_EPOCHS = 11
 data_dir = '/home/dsola/repos/PGA-Net/data/'
 batch_size = 1
 
-train_set = City(data_dir, split='train', is_transform=True)
-val_set = City(data_dir, split='val', is_transform=True)
+train_set = City(data_dir, split='train', is_transform=True, img_size=(128, 256))
+val_set = City(data_dir, split='val', is_transform=True, img_size=(128, 256))
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
 val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                         drop_last=True)
@@ -72,8 +72,8 @@ for epoch in range(N_EPOCHS):
 
 model_name = checkpoint_path.split('/')[-2]
 
-with open(f'../results/{model_name}-mean-acc-epoch.json', 'w') as fp:
+with open(f'../results/{model_name}-mean-acc-epoch-128-256-size.json', 'w') as fp:
     json.dump(acc_dict, fp)
 
-with open(f'../results/{model_name}-mean-iou-epoch.json', 'w') as fp:
+with open(f'../results/{model_name}-mean-iou-epoch-128-256-size.json', 'w') as fp:
     json.dump(iou_dict, fp)

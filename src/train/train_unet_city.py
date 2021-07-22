@@ -44,8 +44,8 @@ def get_args():
 
 
 def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True):
-    train_set = City(data_dir, split='train', is_transform=True)
-    val_set = City(data_dir, split='val', is_transform=True)
+    train_set = City(data_dir, split='train', is_transform=True, img_size=(128, 256))
+    val_set = City(data_dir, split='val', is_transform=True, img_size=(128, 256))
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                             drop_last=True)

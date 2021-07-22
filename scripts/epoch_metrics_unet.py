@@ -9,15 +9,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_index
 from tqdm import tqdm
+from torch import optim
 
+from src.train.utils import load_ckp
 
 N_EPOCHS = 11
 
 data_dir = '/home/dsola/repos/PGA-Net/data/'
 batch_size = 1
 
-train_set = City(data_dir, split='train', is_transform=True)
-val_set = City(data_dir, split='val', is_transform=True)
+train_set = City(data_dir, split='train', is_transform=True, img_size=(128, 256))
+val_set = City(data_dir, split='val', is_transform=True, img_size=(128, 256))
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
 val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
                         drop_last=True)
@@ -28,8 +30,10 @@ acc_dict, iou_dict = {}, {}
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
     model = UNet(n_channels=3, n_classes=19, bilinear=True).to(device=device)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/wild_sun_150_city_unet_ignore_index/epoch{epoch+1}.pth'
-    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/glorious_haze_169_unet_city_128_256_size/epoch{epoch+1}-net-optimizer.pth'
+    model, optimizer, _ = load_ckp(checkpoint_path, model, optimizer)
+    # model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model.eval()
     out = nn.Softmax(dim=1)
 
