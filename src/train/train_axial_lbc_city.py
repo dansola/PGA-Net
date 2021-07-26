@@ -1,7 +1,7 @@
 import os
 import sys
 
-from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC
+from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -18,9 +18,10 @@ from src.models.basic_axial.basic_axialnet import BasicAxial
 from src.datasets.city import City
 from torch.utils.data import DataLoader
 import wandb
+import gc
 
 wandb.init()
-
+# gc.set_debug(gc.DEBUG_LEAK)
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train AxialUnet on images and target masks',
@@ -31,7 +32,7 @@ def get_args():
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
-    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.001,
+    parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
                         help='Learning rate', dest='lr')
     parser.add_argument('-f', '--load', dest='load', type=str, default=False,
                         help='Load model from a .pth file')
@@ -56,23 +57,22 @@ def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, save_cp
 
     for epoch in range(epochs):
         net.train()
-        epoch_loss = 0
         with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                imgs = batch['image']
-                true_masks = batch['mask']
+                imgs = batch['image'].to(device)
+                true_masks = batch['mask'].to(device)
 
                 assert imgs.shape[1] == net.channels, \
                     f'Network has been defined with {net.channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
-                imgs = imgs.to(device=device, dtype=torch.float32)
-                target = true_masks.to(device=device, dtype=torch.long)
+                imgs = imgs.to(device=device, dtype=torch.float32).detach()
+                target = true_masks.to(device=device, dtype=torch.long)#.detach()
 
-                masks_pred = net(imgs)
-                probs = F.softmax(masks_pred, dim=1)
-                argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
+                masks_pred = net(imgs)#.detach()
+                probs = F.softmax(masks_pred, dim=1).detach()
+                argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32).detach()
 
                 try:
                     example_images = [wandb.Image(imgs[0], caption='Image'),
@@ -87,12 +87,11 @@ def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, save_cp
 
                 loss = criterion(masks_pred, target.squeeze(1))
                 try:
-                    wandb.log({"Training Loss": loss})
+                    wandb.log({"Training Loss": loss.detach()})
                 except:
                     print("wandb failed to log training loss...skipping...")
-                epoch_loss += loss.item()
 
-                pbar.set_postfix(**{'loss (batch)': loss.item()})
+                pbar.set_postfix(**{'loss (batch)': loss.detach().item()})
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -134,7 +133,8 @@ def train_net(net, optimizer, data_dir, device, epochs=20, batch_size=1, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = SmallAxialUNetLBC(3, 19, 10)
+    # net = SmallAxialUNetLBC(3, 19, 10)
+    net = AxialUNetLBC(3, 19, 10)
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
     wandb.watch(net)
 
