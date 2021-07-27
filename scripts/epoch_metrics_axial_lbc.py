@@ -2,7 +2,7 @@ from src.datasets.city import City
 from torch.utils.data import DataLoader
 import torch
 
-from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC
+from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC
 from src.models.unet.unet_model import UNet
 from loguru import logger as log
 from torch import nn
@@ -12,7 +12,7 @@ from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jacca
 from tqdm import tqdm
 from src.train.utils import load_ckp
 
-N_EPOCHS = 11
+N_EPOCHS = 10
 
 data_dir = '/home/dsola/repos/PGA-Net/data/'
 batch_size = 1
@@ -28,9 +28,10 @@ acc_dict, iou_dict = {}, {}
 
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
-    model = SmallAxialUNetLBC(3, 19, 10).to(device=device)
+    # model = SmallAxialUNetLBC(3, 19, 10).to(device=device)
+    model = AxialUNetLBC(3, 19, 10).to(device=device)
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/distinctive_snowflake_167_small_axial_lbc_city/epoch{epoch+1}-net-optimizer.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/quiet_wildflower_208_full_axial_unet_lbc_city/epoch{epoch+1}-net-optimizer.pth'
     model, optimizer, _ = load_ckp(checkpoint_path, model, optimizer)
     model.eval()
     out = nn.Softmax(dim=1)
