@@ -137,7 +137,7 @@ class AxialUNetLBC(nn.Module):
         self.up3 = AxialUpLBC(self.embedding_dims * 4, self.embedding_dims * 2)
         self.up4 = AxialUpLBC(self.embedding_dims * 2, self.embedding_dims)
 
-        self.decode = conv1x1(self.embedding_dims, 3)
+        self.decode = conv1x1(self.embedding_dims, self.n_classes)
 
     def forward(self, x):
         x1 = self.encode(x)
@@ -170,7 +170,7 @@ class SmallAxialUNetLBC(nn.Module):
         self.up1 = AxialUpLBC(self.embedding_dims * 4, self.embedding_dims * 2)
         self.up2 = AxialUpLBC(self.embedding_dims * 2, self.embedding_dims)
 
-        self.decode = conv1x1(self.embedding_dims, 3)
+        self.decode = conv1x1(self.embedding_dims, self.n_classes)
 
     def forward(self, x):
         x1 = self.encode(x)

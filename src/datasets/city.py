@@ -7,7 +7,7 @@ import skimage.transform
 
 from torch.utils import data
 
-from datasets.utils import recursive_glob, Compose, RandomHorizontallyFlip, RandomRotate, Scale
+from src.datasets.utils import recursive_glob, Compose, RandomHorizontallyFlip, RandomRotate, Scale
 
 
 class City(data.Dataset):
@@ -104,29 +104,29 @@ class City(data.Dataset):
             33,
         ]
         self.class_names = [
-            "unlabelled",
-            "road",
-            "sidewalk",
-            "building",
-            "wall",
-            "fence",
-            "pole",
-            "traffic_light",
-            "traffic_sign",
-            "vegetation",
-            "terrain",
-            "sky",
-            "person",
-            "rider",
-            "car",
-            "truck",
-            "bus",
-            "train",
-            "motorcycle",
-            "bicycle",
+            "unlabelled",  # N/A
+            "road",  # 0
+            "sidewalk",  # 1
+            "building",  # 2
+            "wall",  # 3
+            "fence",  # 4
+            "pole",  # 5
+            "traffic_light",  # 6
+            "traffic_sign",  # 7
+            "vegetation",  # 8
+            "terrain",  # 9
+            "sky",  # 10
+            "person",  # 11
+            "rider",  # 12
+            "car",  # 13
+            "truck",  # 14
+            "bus",  # 15
+            "train",  # 16
+            "motorcycle",  # 17
+            "bicycle",  # 18
         ]
 
-        self.ignore_index = 250
+        self.ignore_index = 255
         self.class_map = dict(zip(self.valid_classes, range(19)))
 
         if not self.files[split]:
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     augmentations = Compose([Scale(2048), RandomRotate(10), RandomHorizontallyFlip(0.5)])
 
     local_path = "/datasets01/cityscapes/112817/"
-    dst = cityscapesLoader(local_path, is_transform=True, augmentations=augmentations)
+    dst = City(local_path, is_transform=True, augmentations=augmentations)
     bs = 4
     trainloader = data.DataLoader(dst, batch_size=bs, num_workers=0)
     for i, data_samples in enumerate(trainloader):
