@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_index
+from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_index
 
 
 def eval_net(net, loader, device):

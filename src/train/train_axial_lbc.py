@@ -54,7 +54,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
     global_step = 0
 
-    optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
+    optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-1, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
 
@@ -123,8 +123,8 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
-    net = SmallAxialUNetLBC(3, 3, 10)
-    # net = AxialUNetLBC(3, 3, 10)
+    # net = SmallAxialUNetLBC(3, 3, 10)
+    net = AxialUNetLBC(3, 3, 10)
     # net = LargeAxialLBC(3, 3, 10)
     wandb.watch(net)
 
