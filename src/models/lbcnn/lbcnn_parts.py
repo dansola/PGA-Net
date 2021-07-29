@@ -30,3 +30,53 @@ class BlockLBP(nn.Module):
         x = self.conv_1x1(x)
         x.add_(res)
         return x
+
+
+class BlockLBPUNet(nn.Module):
+
+    def __init__(self, n_channels, out_channels, sparsity=0.5):
+        super().__init__()
+        self.batch_norm = nn.BatchNorm2d(n_channels)
+        self.conv_lbp = ConvLBP(n_channels, n_channels, kernel_size=3, sparsity=sparsity)
+        self.conv_1x1 = nn.Conv2d(n_channels, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        res = x
+        x = self.batch_norm(x)
+        x = F.relu(self.conv_lbp(x))
+        x.add_(res)
+        x = self.conv_1x1(x)
+        return x
+
+
+class DownLBP(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.maxpool_conv = nn.Sequential(
+            nn.MaxPool2d(2),
+            BlockLBPUNet(in_channels, out_channels)
+        )
+
+    def forward(self, x):
+        return self.maxpool_conv(x)
+
+
+class UpLBP(nn.Module):
+    def __init__(self, in_channels, out_channels, bilinear=True):
+        super().__init__()
+        if bilinear:
+            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.conv = BlockLBPUNet(in_channels, out_channels, in_channels // 2)
+        else:
+            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+            self.conv = BlockLBPUNet(in_channels, out_channels)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                        diffY // 2, diffY - diffY // 2])
+        x = torch.cat([x2, x1], dim=1)
+        return self.conv(x)

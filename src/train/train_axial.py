@@ -1,6 +1,10 @@
 import os
 import sys
 
+# from src.models.axial_unet.axial_unet import AxialUnet
+from src.models.lbcnn.axial_unet import AxialUNet, SmallAxialUNet
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
+
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
@@ -25,7 +29,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -35,7 +39,7 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
@@ -64,8 +68,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.channels, \
-                    f'Network has been defined with {net.channels} input channels, ' \
+                assert imgs.shape[1] == net.n_channels, \
+                    f'Network has been defined with {net.n_channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
@@ -120,7 +124,11 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    # net = BasicAxial(3, 3, 10, img_crop=args.crop)
+    net = AxialUNet(3, 3, 64)
+    # net = UNetLBP(3, 3)
+    # net = SmallUNetLBP(3, 3)
+    # net = SmallAxialUNet(3, 3, 64)
     wandb.watch(net)
 
     if args.load:
