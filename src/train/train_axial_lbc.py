@@ -1,7 +1,7 @@
 import os
 import sys
 
-from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC, LargeAxialLBC
+from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC, LargeAxialLBC, BasicAxialLBC
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -124,8 +124,9 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
     # net = SmallAxialUNetLBC(3, 3, 10)
-    net = AxialUNetLBC(3, 3, 10)
+    # net = AxialUNetLBC(3, 3, 10)
     # net = LargeAxialLBC(3, 3, 10)
+    net = BasicAxialLBC(3, 3, 10)
     wandb.watch(net)
 
     if args.load:

@@ -3,7 +3,7 @@ from src.datasets.city import City
 from torch.utils.data import DataLoader
 import torch
 from src.datasets.ice import Ice
-from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC
+from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC, LargeAxialLBC, BasicAxialLBC
 from src.models.unet.unet_model import UNet
 from loguru import logger as log
 from torch import nn
@@ -47,9 +47,11 @@ acc_dict, iou_dict = {}, {}
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch + 1}')
     # model = SmallAxialUNetLBC(3, 3, 10).to(device=device)
-    model = AxialUNetLBC(3, 3, 10).to(device=device)
+    # model = AxialUNetLBC(3, 3, 10).to(device=device)
+    # model = LargeAxialLBC(3, 3, 10).to(device=device)
+    model = BasicAxialLBC(3, 3, 10).to(device=device)
     # optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/eternal_valley_214_full_axial_lbc_unet_1e-1_weight_decay/epoch{epoch + 1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/vocal_dragon_242_basic_axial_lbc_ice/epoch{epoch + 1}.pth'
     # model, optimizer, _ = load_ckp(checkpoint_path, model, optimizer)
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
 

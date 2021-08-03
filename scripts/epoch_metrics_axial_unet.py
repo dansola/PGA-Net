@@ -33,12 +33,12 @@ acc_dict, iou_dict = {}, {}
 
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
-    model = AxialUNet(3, 3, 64).to(device=device)
-    # model = SmallAxialUNet(3, 3, 64).to(device=device)
+    # model = AxialUNet(3, 3, 64).to(device=device)
+    model = SmallAxialUNet(3, 3, 64).to(device=device)
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/fiery_blaze_231_full_axial_unet_ice_64_channels/epoch{epoch+1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/soft_waterfall_230_small_axial_unet_ice_64_channels/epoch{epoch+1}.pth'
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    model.eval()
+    model.train()
     out = nn.Softmax(dim=1)
 
     mask_list, pred_list = [], []

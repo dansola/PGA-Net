@@ -13,7 +13,7 @@ from torch import optim
 from tqdm import tqdm
 from src.eval.eval_unet import eval_net
 from src.models.unet.unet_model import UNet, SmallUNet
-from src.datasets.ice import BasicDatasetIce
+from src.datasets.ice import BasicDatasetIce, Ice
 from torch.utils.data import DataLoader
 import wandb
 
@@ -42,14 +42,13 @@ def get_args():
 
 
 def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
-    dir_img = os.path.join(data_dir, 'imgs')
-    dir_mask = os.path.join(data_dir, 'masks')
-    dir_txt = os.path.join(data_dir, 'txt_files')
-    train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
-    val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
-                            drop_last=True)
+    train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                    os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
+    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size)
 
     global_step = 0
 
@@ -121,8 +120,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     wandb.watch(net)
 
     if args.load:

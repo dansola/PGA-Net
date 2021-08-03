@@ -43,13 +43,13 @@ acc_dict, iou_dict = {}, {}
 
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
-    # model = UNet(n_channels=3, n_classes=19, bilinear=True).to(device=device)
-    model = SmallUNet(n_channels=3, n_classes=3, bilinear=True).to(device=device)
+    model = UNet(n_channels=3, n_classes=3, bilinear=True).to(device=device)
+    # model = SmallUNet(n_channels=3, n_classes=3, bilinear=True).to(device=device)
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/splendid_dream_234_small_unet_ice/epoch{epoch+1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/frosty_sponge_239_unet_ice/epoch{epoch+1}.pth'
     # model, optimizer, _ = load_ckp(checkpoint_path, model, optimizer)
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    model.eval()
+    model.train()
     out = nn.Softmax(dim=1)
 
     mask_list, pred_list = [], []
