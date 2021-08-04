@@ -18,6 +18,7 @@ from src.models.basic_axial.basic_axialnet import BasicAxial
 from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
+import time
 
 wandb.init()
 
@@ -27,7 +28,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=10,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -66,8 +67,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.channels, \
-                    f'Network has been defined with {net.channels} input channels, ' \
+                assert imgs.shape[1] == net.n_channels, \
+                    f'Network has been defined with {net.n_channels} input channels, ' \
                     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
                     'the images are loaded correctly.'
 
@@ -121,12 +122,12 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
 if __name__ == '__main__':
     args = get_args()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cpu' #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
-    # net = SmallAxialUNetLBC(3, 3, 10)
+    net = SmallAxialUNetLBC(3, 3, 10)
     # net = AxialUNetLBC(3, 3, 10)
     # net = LargeAxialLBC(3, 3, 10)
-    net = BasicAxialLBC(3, 3, 10)
+    # net = BasicAxialLBC(3, 3, 10)
     wandb.watch(net)
 
     if args.load:
@@ -135,9 +136,12 @@ if __name__ == '__main__':
     net.to(device=device)
 
     try:
+        start_time = time.time()
         train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
                   device=device,
                   img_scale=args.scale, img_crop=args.crop)
+        total_time = time.time() - start_time
+        print('Total Time: ', total_time)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:

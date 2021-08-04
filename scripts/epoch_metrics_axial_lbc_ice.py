@@ -46,12 +46,12 @@ acc_dict, iou_dict = {}, {}
 
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch + 1}')
-    # model = SmallAxialUNetLBC(3, 3, 10).to(device=device)
+    model = SmallAxialUNetLBC(3, 3, 32).to(device=device)
     # model = AxialUNetLBC(3, 3, 10).to(device=device)
     # model = LargeAxialLBC(3, 3, 10).to(device=device)
-    model = BasicAxialLBC(3, 3, 10).to(device=device)
+    # model = BasicAxialLBC(3, 3, 10).to(device=device)
     # optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/vocal_dragon_242_basic_axial_lbc_ice/epoch{epoch + 1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/wild_shadow_243_small_axial_lbc_unet_32_embedding/epoch{epoch + 1}.pth'
     # model, optimizer, _ = load_ckp(checkpoint_path, model, optimizer)
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
 
