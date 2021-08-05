@@ -1,8 +1,9 @@
 import os
 import sys
-import time
 
-from src.models.dsc.dsc_unet import UNetDSC
+# from src.models.axial_unet.axial_unet import AxialUnet
+from src.models.lbcnn.axial_unet import AxialUNet, SmallAxialUNet
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -14,11 +15,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from src.eval.eval_unet import eval_net
-from src.models.unet.unet_model import UNet, SmallUNet
-from src.datasets.ice import BasicDatasetIce, Ice
+from src.eval.eval_mobilenet import eval_net
+from src.models.basic_axial.basic_axialnet import BasicAxial
+from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
+from torchvision.models.segmentation import deeplabv3_resnet50, deeplabv3_resnet101, lraspp_mobilenet_v3_large, deeplabv3_mobilenet_v3_large
 
 wandb.init()
 
@@ -30,7 +32,7 @@ def get_args():
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=2,
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
                         help='Learning rate', dest='lr')
@@ -52,19 +54,10 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size)
-    # dir_img = os.path.join(data_dir, 'imgs')
-    # dir_mask = os.path.join(data_dir, 'masks')
-    # dir_txt = os.path.join(data_dir, 'txt_files')
-    # train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
-    # val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
-    # train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    # val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
-    #                         drop_last=True)
 
     global_step = 0
 
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(epochs):
@@ -75,15 +68,10 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
-                    f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
-
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = net(imgs)
+                masks_pred = net(imgs)['out']
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
@@ -131,9 +119,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
-    # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = deeplabv3_mobilenet_v3_large(num_classes=3)
+    net = lraspp_mobilenet_v3_large(num_classes=3)
     wandb.watch(net)
 
     if args.load:
@@ -142,12 +129,9 @@ if __name__ == '__main__':
     net.to(device=device)
 
     try:
-        start_time = time.time()
         train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
                   device=device,
                   img_scale=args.scale, img_crop=args.crop)
-        total_time = time.time() - start_time
-        print('Total Time: ', total_time)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:

@@ -15,6 +15,18 @@ class ConvLBP(nn.Conv2d):
         weights.requires_grad_(False)
 
 
+class DSCConvLBP(nn.Conv2d):
+    def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0.5):
+        super().__init__(in_channels, out_channels, kernel_size, padding=1, bias=False, dilation=1, )
+        weights = next(self.parameters())
+        matrix_proba = torch.FloatTensor(weights.data.shape).fill_(0.5)
+        binary_weights = torch.bernoulli(matrix_proba) * 2 - 1
+        mask_inactive = torch.rand(matrix_proba.shape) > sparsity
+        binary_weights.masked_fill_(mask_inactive, 0)
+        weights.data = binary_weights
+        weights.requires_grad_(False)
+
+
 class BlockLBP(nn.Module):
 
     def __init__(self, n_channels, n_weights, sparsity=0.5):
