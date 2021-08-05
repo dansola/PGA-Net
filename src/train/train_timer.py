@@ -22,6 +22,7 @@ from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 # import wandb
 import json
+from loguru import logger as log
 
 # wandb.init()
 
@@ -43,7 +44,7 @@ def get_args():
                         help='Downscaling factor of the images')
     parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
                         help='Height and width of images and masks.')
-    parser.add_argument('-m', '--model', dest='model', type=str, default='unet',
+    parser.add_argument('-m', '--model', dest='model', type=str, default='small_axial_lbc_unet_10',
                         help='Model to use.')
     parser.add_argument('-dev', '--device', dest='device', type=str, default='cuda',
                         help='Train on gpu vs cpu.')
@@ -138,9 +139,9 @@ if __name__ == '__main__':
     elif args.model == 'axial_unet':
         net = AxialUNet(3, 3, 64)
     elif args.model == 'small_axial_unet':
-        net = net = SmallAxialUNet(3, 3, 64)
+        net = SmallAxialUNet(3, 3, 64)
     elif args.model == 'lbc_unet':
-        net = net = UNetLBP(3, 3)
+        net = UNetLBP(3, 3)
     elif args.model == 'small_lbc_unet':
         net = SmallUNetLBP(3, 3)
     elif args.model == 'axial_lbc_unet':
@@ -149,7 +150,10 @@ if __name__ == '__main__':
         net = SmallAxialUNetLBC(3, 3, 32)
     elif args.model == 'small_axial_lbc_unet_10':
         net = SmallAxialUNetLBC(3, 3, 10)
+    else:
+        raise ValueError('Please enter a valid model name.')
 
+    log.info(f'Training {args.model}.')
     # wandb.watch(net)
 
     if args.load:
@@ -162,19 +166,22 @@ if __name__ == '__main__':
             train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
                       device=device,
                       img_scale=args.scale, img_crop=args.crop)
-        cpu_time = float(str(prof).split('\n')[-3].split(' ')[-1][:-1])
-        cuda_time = float(str(prof).split('\n')[-2].split(' ')[-1][:-1])
+        print(prof)
+        # cpu_time = float(str(prof).split('\n')[-3].split(' ')[-1][:-1])
+        # cuda_time = float(str(prof).split('\n')[-2].split(' ')[-1][:-1])
+        #
+        # print(f'CPU Time: {cpu_time}, Cuda Time: {cuda_time}')
 
-        if os.path.exists(f'model_profile_{args.device}.json'):
-            with open(f'model_profile_{args.device}.json') as f:
-                data = json.load(f)
-            data[args.model] = {'cpu_time': cpu_time, 'cuda_time': cuda_time}
-            with open(f'model_profile_{args.device}.json', 'w') as outfile:
-                json.dump(data, outfile)
-        else:
-            data = {args.model: {'cpu_time': cpu_time, 'cuda_time': cuda_time}}
-            with open(f'model_profile_{args.device}.json', 'w') as outfile:
-                json.dump(data, outfile)
+        # if os.path.exists(f'model_profile_{args.device}.json'):
+        #     with open(f'model_profile_{args.device}.json') as f:
+        #         data = json.load(f)
+        #     data[args.model] = {'cpu_time': cpu_time, 'cuda_time': cuda_time}
+        #     with open(f'model_profile_{args.device}.json', 'w') as outfile:
+        #         json.dump(data, outfile)
+        # else:
+        #     data = {args.model: {'cpu_time': cpu_time, 'cuda_time': cuda_time}}
+        #     with open(f'model_profile_{args.device}.json', 'w') as outfile:
+        #         json.dump(data, outfile)
 
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
