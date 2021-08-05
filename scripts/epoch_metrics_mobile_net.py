@@ -5,8 +5,6 @@ from torch.utils.data import DataLoader
 import torch
 
 from src.datasets.ice import Ice
-from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
-from src.models.dsc.dsc_unet import UNetDSC
 from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC
 from src.models.lbcnn.axial_unet import AxialUNet
 from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
@@ -18,11 +16,12 @@ from torch import optim
 from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_index
 from tqdm import tqdm
 from src.train.utils import load_ckp
+from torchvision.models.segmentation import deeplabv3_mobilenet_v3_large, lraspp_mobilenet_v3_large
 
 N_EPOCHS = 80
 
 data_dir = '/home/dsola/repos/PGA-Net/data/'
-batch_size = 1
+batch_size = 2
 img_crop = 256
 img_scale = 0.35
 
@@ -36,12 +35,10 @@ acc_dict, iou_dict = {}, {}
 
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
-    # model = UNetDSC(n_channels=3, n_classes=3, bilinear=True).to(device=device)
-    model = DSCUNetLBP(3, 3).to(device=device)
-    # model = DSCSmallUNetLBP(3, 3).to(device=device)
-    # model = SmallUNetLBP(3, 3).to(device=device)
+    model = lraspp_mobilenet_v3_large(num_classes=3).to(device=device)
+    # model = deeplabv3_mobilenet_v3_large(num_classes=3).to(device=device)
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/youthful_microwave_310_lbc_dsc_unet_ice/epoch{epoch+1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/clean_darkness_312_laraspp_mobilenet_ice/epoch{epoch+1}.pth'
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model.train()
     out = nn.Softmax(dim=1)
@@ -53,7 +50,7 @@ for epoch in range(N_EPOCHS):
         mask = batch['mask'].to(device=device, dtype=torch.long)
 
         with torch.no_grad():
-            output = model(img)
+            output = model(img)['out']
         sftmx = out(output)
         argmx = torch.argmax(sftmx, dim=1)
 
@@ -63,7 +60,7 @@ for epoch in range(N_EPOCHS):
     masks = torch.stack(mask_list, dim=0)
     preds = torch.stack(pred_list, dim=0)
 
-    hist = _fast_hist(masks.to(dtype=torch.long, device='cpu'), preds.to(dtype=torch.long, device='cpu'), 3)
+    hist = _fast_hist(masks.squeeze(2).to(dtype=torch.long, device='cpu'), preds.to(dtype=torch.long, device='cpu'), 3)
 
     acc_dict[epoch+1] = per_class_pixel_accuracy(hist)[0].item()
     iou_dict[epoch + 1] = jaccard_index(hist)[0].item()

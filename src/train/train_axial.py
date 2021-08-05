@@ -126,8 +126,8 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = BasicAxial(3, 3, 10, img_crop=args.crop)
     # net = AxialUNet(3, 3, 20)
-    net = UNetLBP(3, 3)
-    # net = SmallUNetLBP(3, 3)
+    # net = UNetLBP(3, 3)
+    net = SmallUNetLBP(3, 3)
     # net = SmallAxialUNet(3, 3, 20)
     wandb.watch(net)
 
