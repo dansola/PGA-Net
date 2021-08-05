@@ -1,5 +1,8 @@
 import os
 import sys
+import time
+
+from src.models.dsc.dsc_unet import UNetDSC
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -12,8 +15,8 @@ import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 from src.eval.eval_unet import eval_net
-from src.models.unet.unet_model import UNet
-from src.datasets.ice import BasicDatasetIce
+from src.models.unet.unet_model import UNet, SmallUNet
+from src.datasets.ice import BasicDatasetIce, Ice
 from torch.utils.data import DataLoader
 import wandb
 
@@ -25,7 +28,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -35,21 +38,28 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=220,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
 
 
 def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
-    dir_img = os.path.join(data_dir, 'imgs')
-    dir_mask = os.path.join(data_dir, 'masks')
-    dir_txt = os.path.join(data_dir, 'txt_files')
-    train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
-    val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
-                            drop_last=True)
+    train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                    os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
+    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size)
+    # dir_img = os.path.join(data_dir, 'imgs')
+    # dir_mask = os.path.join(data_dir, 'masks')
+    # dir_txt = os.path.join(data_dir, 'txt_files')
+    # train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
+    # val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
+    # train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    # val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
+    #                         drop_last=True)
 
     global_step = 0
 
@@ -121,7 +131,9 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     wandb.watch(net)
 
     if args.load:
@@ -130,9 +142,12 @@ if __name__ == '__main__':
     net.to(device=device)
 
     try:
+        start_time = time.time()
         train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
                   device=device,
                   img_scale=args.scale, img_crop=args.crop)
+        total_time = time.time() - start_time
+        print('Total Time: ', total_time)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from src.models.axial_attention.positional import PositionalEncodingPermute2D, AxialPositionalEmbedding, elem_add
-from src.models.axial_attention.axial_attention import AxialAttention, AxialImageTransformer
+from src.models.axial_attention.axial_attention import AxialAttention
 
 
 def conv1x1(in_planes, out_planes, stride=1):

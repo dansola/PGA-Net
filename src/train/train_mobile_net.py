@@ -15,11 +15,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from src.eval.eval_axial import eval_net
+from src.eval.eval_mobilenet import eval_net
 from src.models.basic_axial.basic_axialnet import BasicAxial
 from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 import wandb
+from torchvision.models.segmentation import deeplabv3_resnet50, deeplabv3_resnet101, lraspp_mobilenet_v3_large, deeplabv3_mobilenet_v3_large
 
 wandb.init()
 
@@ -31,7 +32,7 @@ def get_args():
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=2,
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
                         help='Learning rate', dest='lr')
@@ -57,7 +58,6 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
     global_step = 0
 
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(epochs):
@@ -68,15 +68,10 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 imgs = batch['image']
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
-                    f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
-
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = net(imgs)
+                masks_pred = net(imgs)['out']
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
@@ -124,11 +119,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = BasicAxial(3, 3, 10, img_crop=args.crop)
-    # net = AxialUNet(3, 3, 20)
-    # net = UNetLBP(3, 3)
-    net = SmallUNetLBP(3, 3)
-    # net = SmallAxialUNet(3, 3, 20)
+    # net = deeplabv3_mobilenet_v3_large(num_classes=3)
+    net = lraspp_mobilenet_v3_large(num_classes=3)
     wandb.watch(net)
 
     if args.load:

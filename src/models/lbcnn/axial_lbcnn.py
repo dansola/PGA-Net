@@ -9,13 +9,13 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 
 class BlockAxialLBC(nn.Module):
-    def __init__(self, channels, embedding_dims, heads=2):
+    def __init__(self, n_channels, embedding_dims, heads=2):
         super(BlockAxialLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.embedding_dims = embedding_dims
         self.embedding_dims_trip = embedding_dims * 3
 
-        self.conv1 = conv1x1(self.channels, self.embedding_dims)
+        self.conv1 = conv1x1(self.n_channels, self.embedding_dims)
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
@@ -47,11 +47,11 @@ class BlockAxialLBC(nn.Module):
 
 
 class AxialDownLBC(nn.Module):
-    def __init__(self, channels, embedding_dims, heads=2):
+    def __init__(self, n_channels, embedding_dims, heads=2):
         super(AxialDownLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.embedding_dims = embedding_dims
-        self.cat_dims = embedding_dims + channels
+        self.cat_dims = embedding_dims + n_channels
         self.heads = heads
 
         self.mp = nn.MaxPool2d(2)
@@ -59,10 +59,10 @@ class AxialDownLBC(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
-        self.attn = AxialAttention(dim=self.channels, dim_index=1, heads=self.heads, num_dimensions=2,
+        self.attn = AxialAttention(dim=self.n_channels, dim_index=1, heads=self.heads, num_dimensions=2,
                                    sum_axial_out=True)
-        self.bn_lbc = nn.BatchNorm2d(self.channels)
-        self.conv_lbc = ConvLBP(self.channels, self.channels)
+        self.bn_lbc = nn.BatchNorm2d(self.n_channels)
+        self.conv_lbc = ConvLBP(self.n_channels, self.n_channels)
 
     def forward(self, x):
         x = self.mp(x)
@@ -83,11 +83,11 @@ class AxialDownLBC(nn.Module):
 
 
 class AxialUpLBC(nn.Module):
-    def __init__(self, channels, embedding_dims, heads=2):
+    def __init__(self, n_channels, embedding_dims, heads=2):
         super(AxialUpLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.embedding_dims = embedding_dims
-        self.cat_dims = channels * 3 + embedding_dims
+        self.cat_dims = n_channels * 3 + embedding_dims
         self.heads = heads
 
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -96,10 +96,10 @@ class AxialUpLBC(nn.Module):
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
-        self.attn = AxialAttention(dim=self.channels, dim_index=1, heads=self.heads, num_dimensions=2,
+        self.attn = AxialAttention(dim=self.n_channels, dim_index=1, heads=self.heads, num_dimensions=2,
                                    sum_axial_out=True)
-        self.bn_lbc = nn.BatchNorm2d(self.channels)
-        self.conv_lbc = ConvLBP(self.channels, self.channels)
+        self.bn_lbc = nn.BatchNorm2d(self.n_channels)
+        self.conv_lbc = ConvLBP(self.n_channels, self.n_channels)
 
     def forward(self, x, res):
         x = self.up(x)
@@ -120,13 +120,13 @@ class AxialUpLBC(nn.Module):
 
 
 class AxialUNetLBC(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims):
+    def __init__(self, n_channels, n_classes, embedding_dims):
         super(AxialUNetLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
 
-        self.encode = BlockAxialLBC(self.channels, self.embedding_dims)
+        self.encode = BlockAxialLBC(self.n_channels, self.embedding_dims)
 
         self.down1 = AxialDownLBC(self.embedding_dims, self.embedding_dims * 2)
         self.down2 = AxialDownLBC(self.embedding_dims * 2, self.embedding_dims * 4)
@@ -157,13 +157,13 @@ class AxialUNetLBC(nn.Module):
 
 
 class SmallAxialUNetLBC(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims):
+    def __init__(self, n_channels, n_classes, embedding_dims):
         super(SmallAxialUNetLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
 
-        self.encode = BlockAxialLBC(self.channels, self.embedding_dims)
+        self.encode = BlockAxialLBC(self.n_channels, self.embedding_dims)
 
         self.down1 = AxialDownLBC(self.embedding_dims, self.embedding_dims * 2)
         self.down2 = AxialDownLBC(self.embedding_dims * 2, self.embedding_dims * 4)
@@ -186,13 +186,13 @@ class SmallAxialUNetLBC(nn.Module):
 
 
 class BlockAxialLBC_Add(nn.Module):
-    def __init__(self, channels, embedding_dims, heads=2):
+    def __init__(self, n_channels, embedding_dims, heads=2):
         super(BlockAxialLBC_Add, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.embedding_dims = embedding_dims
         self.embedding_dims_trip = embedding_dims * 3
 
-        self.conv1 = conv1x1(self.channels, self.embedding_dims)
+        self.conv1 = conv1x1(self.n_channels, self.embedding_dims)
         self.bn1 = nn.BatchNorm2d(self.embedding_dims)
         self.relu = nn.ReLU(inplace=True)
 
@@ -223,13 +223,13 @@ class BlockAxialLBC_Add(nn.Module):
 
 
 class BasicAxialLBC(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims):
+    def __init__(self, n_channels, n_classes, embedding_dims):
         super(BasicAxialLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
 
-        self.block1 = BlockAxialLBC(self.channels, self.embedding_dims)
+        self.block1 = BlockAxialLBC(self.n_channels, self.embedding_dims)
         self.block2 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
         self.block3 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
         self.block4 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
@@ -247,13 +247,13 @@ class BasicAxialLBC(nn.Module):
 
 
 class BasicAxialLBC_Add(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims):
+    def __init__(self, n_channels, n_classes, embedding_dims):
         super(BasicAxialLBC_Add, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
 
-        self.block1 = BlockAxialLBC_Add(self.channels, self.embedding_dims)
+        self.block1 = BlockAxialLBC_Add(self.n_channels, self.embedding_dims)
         self.block2 = BlockAxialLBC_Add(self.embedding_dims, self.embedding_dims)
         self.block3 = BlockAxialLBC_Add(self.embedding_dims, self.embedding_dims)
         self.block4 = BlockAxialLBC_Add(self.embedding_dims, self.embedding_dims)
@@ -271,13 +271,13 @@ class BasicAxialLBC_Add(nn.Module):
 
 
 class LargeAxialLBC(nn.Module):
-    def __init__(self, channels, n_classes, embedding_dims):
+    def __init__(self, n_channels, n_classes, embedding_dims):
         super(LargeAxialLBC, self).__init__()
-        self.channels = channels
+        self.n_channels = n_channels
         self.n_classes = n_classes
         self.embedding_dims = embedding_dims
 
-        self.block1 = BlockAxialLBC(self.channels, self.embedding_dims)
+        self.block1 = BlockAxialLBC(self.n_channels, self.embedding_dims)
         self.block2 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
         self.block3 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)
         self.block4 = BlockAxialLBC(self.embedding_dims, self.embedding_dims)

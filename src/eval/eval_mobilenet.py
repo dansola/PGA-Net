@@ -18,12 +18,11 @@ def eval_net(net, loader, device):
             true_masks = true_masks.to(device=device, dtype=torch.long)
 
             with torch.no_grad():
-                mask_pred = net(imgs)
+                mask_pred = net(imgs)['out']
 
             probs = F.softmax(mask_pred, dim=1)
             argmx = torch.argmax(probs, dim=1)
-
-            hist = _fast_hist(true_masks.squeeze(0).squeeze(0), argmx.squeeze(0).to(dtype=torch.long), 3)
+            hist = _fast_hist(true_masks, argmx.unsqueeze(1).to(dtype=torch.long), 3)
 
             tot_iou += jaccard_index(hist)[0]
             tot_acc += per_class_pixel_accuracy(hist)[0]
