@@ -1,0 +1,1 @@
+{"unet": 8.430963039398193, "lbc_unet": 8.16244888305664, "small_axial_lbc_unet": 17.161006927490234, "deeplab_mobile_net": 7.3588433265686035, "lraspp_mobile_net": 6.293579816818237, "dsc_unet": 9.26876163482666, "dsc_lbc_unet": 5.793884515762329, "small_dsc_lbc_unet": 5.293694257736206}

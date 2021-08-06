@@ -1,0 +1,1 @@
+{"unet": {"cpu_time": 259.665, "cuda_time": 259.681}, "lbc_unet": {"cpu_time": 69.37, "cuda_time": 69.394}, "lraspp_mobile_net": {"cpu_time": 33.576, "cuda_time": 33.586}, "dsc_unet": {"cpu_time": 125.998, "cuda_time": 126.016}, "dsc_lbc_unet": {"cpu_time": 68.291, "cuda_time": 68.314}, "small_dsc_lbc_unet": {"cpu_time": 56.395, "cuda_time": 56.412}}
