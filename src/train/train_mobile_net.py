@@ -119,8 +119,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = deeplabv3_mobilenet_v3_large(num_classes=3)
-    net = lraspp_mobilenet_v3_large(num_classes=3)
+    net = deeplabv3_mobilenet_v3_large(num_classes=3, aux_loss=True)
+    # net = lraspp_mobilenet_v3_large(num_classes=3)
     wandb.watch(net)
 
     if args.load:
