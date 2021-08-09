@@ -6,7 +6,7 @@ import torch
 
 from src.datasets.ice import Ice
 from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
-from src.models.dsc.dsc_unet import UNetDSC
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
 from src.models.lbcnn.axial_lbcnn import SmallAxialUNetLBC, AxialUNetLBC
 from src.models.lbcnn.axial_unet import AxialUNet
 from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
@@ -37,11 +37,12 @@ acc_dict, iou_dict = {}, {}
 for epoch in range(N_EPOCHS):
     log.info(f'Evaluating Epoch {epoch+1}')
     # model = UNetDSC(n_channels=3, n_classes=3, bilinear=True).to(device=device)
-    model = DSCUNetLBP(3, 3).to(device=device)
+    model = SmallUNetDSC(3, 3).to(device=device)
+    # model = DSCUNetLBP(3, 3).to(device=device)
     # model = DSCSmallUNetLBP(3, 3).to(device=device)
     # model = SmallUNetLBP(3, 3).to(device=device)
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/youthful_microwave_310_lbc_dsc_unet_ice/epoch{epoch+1}.pth'
+    checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/cosmic_waterfall_315_small_dsc_unet_ice/epoch{epoch+1}.pth'
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model.train()
     out = nn.Softmax(dim=1)

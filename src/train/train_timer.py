@@ -4,7 +4,7 @@ import sys
 import time
 
 from src.models.dsc.dsc_lbc_unet import DSCUNetLBP, DSCSmallUNetLBP
-from src.models.dsc.dsc_unet import UNetDSC
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
 from src.models.lbcnn.axial_lbcnn import AxialUNetLBC, SmallAxialUNetLBC
 from src.models.lbcnn.axial_unet import AxialUNet, SmallAxialUNet
 from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
@@ -136,6 +136,8 @@ if __name__ == '__main__':
         net = lraspp_mobilenet_v3_large(num_classes=3)
     elif args.model == 'dsc_unet':
         net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'small_dsc_unet':
+        net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     elif args.model == 'dsc_lbc_unet':
         net = DSCUNetLBP(3, 3)
     elif args.model == 'small_dsc_lbc_unet':

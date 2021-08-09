@@ -2,7 +2,7 @@ import os
 import sys
 import time
 
-from src.models.dsc.dsc_unet import UNetDSC
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -132,7 +132,8 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     wandb.watch(net)
 
