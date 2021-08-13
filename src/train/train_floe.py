@@ -6,6 +6,7 @@ from torchvision.models.segmentation import lraspp_mobilenet_v3_large
 
 from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
 from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
+from src.models.lbcnn.lbc_unet import UNetLBP
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -31,7 +32,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -125,7 +126,8 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
-    net = DSCSmallUNetLBP(n_channels=1, n_classes=2)
+    # net = DSCSmallUNetLBP(n_channels=1, n_classes=2)
+    net = UNetLBP(n_channels=1, n_classes=2)
     # net = lraspp_mobilenet_v3_large(num_classes=2)
     # net = UNet(n_channels=1, n_classes=2, bilinear=True)
     # net = UNetDSC(n_channels=1, n_classes=2, bilinear=True)
