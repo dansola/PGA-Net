@@ -131,8 +131,8 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     wandb.watch(net)

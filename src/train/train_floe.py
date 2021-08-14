@@ -6,7 +6,7 @@ from torchvision.models.segmentation import lraspp_mobilenet_v3_large
 
 from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
 from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
-from src.models.lbcnn.lbc_unet import UNetLBP
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -127,9 +127,12 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
     # net = DSCSmallUNetLBP(n_channels=1, n_classes=2)
-    net = UNetLBP(n_channels=1, n_classes=2)
+    # net = UNetLBP(n_channels=1, n_classes=2)
+    # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
+    net = SmallUNetLBP(n_channels=1, n_classes=2)
     # net = lraspp_mobilenet_v3_large(num_classes=2)
     # net = UNet(n_channels=1, n_classes=2, bilinear=True)
+    # net = SmallUNet(n_channels=1, n_classes=2, bilinear=True)
     # net = UNetDSC(n_channels=1, n_classes=2, bilinear=True)
     # net = DSCUNetLBP(n_channels=1, n_classes=2)
     wandb.watch(net)
