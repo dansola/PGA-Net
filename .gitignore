@@ -145,3 +145,4 @@ wandb/**
 /src/train/wandb/**
 .npy
 *.npy
+/data/floes/*

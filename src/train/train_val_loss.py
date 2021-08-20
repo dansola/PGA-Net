@@ -21,12 +21,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from src.eval.eval_axial import eval_net
+from src.eval.eval_curves import eval_net
+from src.eval.eval_mobilenet import eval_net as eval_net_mobile
 from src.datasets.ice import Ice
 from torch.utils.data import DataLoader
 # import wandb
 import json
 from loguru import logger as log
+
 
 # wandb.init()
 
@@ -48,7 +50,7 @@ def get_args():
                         help='Downscaling factor of the images')
     parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
                         help='Height and width of images and masks.')
-    parser.add_argument('-m', '--model', dest='model', type=str, default='deeplab_mobile_net',
+    parser.add_argument('-m', '--model', dest='model', type=str, default='unet',
                         help='Model to use.')
     parser.add_argument('-dev', '--device', dest='device', type=str, default='cuda',
                         help='Train on gpu vs cpu.')
@@ -58,11 +60,17 @@ def get_args():
     return parser.parse_args()
 
 
-def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
+def train_net(net, data_dir, device, name, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35,
+              img_crop=320):
+    accs, ious, losses = [], [], []
+
     train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
                     os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
+    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size)
 
     global_step = 0
 
@@ -99,7 +107,19 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 pbar.update(imgs.shape[0])
                 global_step += 1
-
+                if len(train_set) > 10:
+                    n = 10
+                else:
+                    n = 1
+                if global_step % (len(train_set) // (n * batch_size)) == 0:
+                    if 'mobile' in name:
+                        val_loss, val_iou, val_acc = eval_net_mobile(net, val_loader, device)
+                    else:
+                        val_loss, val_iou, val_acc = eval_net(net, val_loader, device)
+                    accs.append(val_acc.item())
+                    ious.append(val_iou.item())
+                    losses.append(val_loss)
+                    # scheduler.step(val_loss)
 
         if save_cp:
             try:
@@ -108,6 +128,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
                 pass
             torch.save(net.state_dict(),
                        '../checkpoints/' + f'epoch{epoch + 1}.pth')
+    return accs, ious, losses
 
 
 if __name__ == '__main__':
@@ -156,43 +177,23 @@ if __name__ == '__main__':
     net.to(device=device)
 
     try:
-        st = time.time()
-        train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
-                  device=device,
-                  img_scale=args.scale, img_crop=args.crop)
-        run_time = time.time() - st
+        accs, ious, losses = train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize,
+                                       lr=args.lr, device=device, img_scale=args.scale, img_crop=args.crop,
+                                       name=args.model)
+        curve_dict = {'loss': losses,
+                      'iou': ious,
+                      'acc': accs}
 
-        if os.path.exists(f'./times/model_profile_{args.device}_v{args.file_number}.json'):
-            with open(f'./times/model_profile_{args.device}_v{args.file_number}.json') as f:
+        if os.path.exists(f'model_curves.json'):
+            with open(f'model_curves.json') as f:
                 data = json.load(f)
-            data[args.model] = run_time
-            with open(f'./times/model_profile_{args.device}_v{args.file_number}.json', 'w') as outfile:
+            data[args.model] = curve_dict
+            with open(f'model_curves.json', 'w') as outfile:
                 json.dump(data, outfile)
         else:
-            data = {args.model: run_time}
-            with open(f'./times/model_profile_{args.device}_v{args.file_number}.json', 'w') as outfile:
+            data = {args.model: curve_dict}
+            with open(f'model_curves.json', 'w') as outfile:
                 json.dump(data, outfile)
-
-        # with torch.autograd.profiler.profile(use_cuda=True) as prof:
-        #     train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
-        #               device=device,
-        #               img_scale=args.scale, img_crop=args.crop)
-        # # print(prof)
-        # cpu_time = float(str(prof).split('\n')[-3].split(' ')[-1][:-1])
-        # cuda_time = float(str(prof).split('\n')[-2].split(' ')[-1][:-1])
-        #
-        # print(f'CPU Time: {cpu_time}, Cuda Time: {cuda_time}')
-        #
-        # if os.path.exists(f'model_profile_{args.device}_v2.json'):
-        #     with open(f'model_profile_{args.device}_v2.json') as f:
-        #         data = json.load(f)
-        #     data[args.model] = {'cpu_time': cpu_time, 'cuda_time': cuda_time}
-        #     with open(f'model_profile_{args.device}_v2.json', 'w') as outfile:
-        #         json.dump(data, outfile)
-        # else:
-        #     data = {args.model: {'cpu_time': cpu_time, 'cuda_time': cuda_time}}
-        #     with open(f'model_profile_{args.device}_v2.json', 'w') as outfile:
-        #         json.dump(data, outfile)
 
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')

@@ -2,7 +2,12 @@ import os
 import sys
 import time
 
+from torchvision.models.segmentation import lraspp_mobilenet_v3_large
+
+from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
 from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
+from src.models.mobilenets import lraspp_mobilenet_v3_large_one_channel, deeplabv3_mobilenet_v3_large_one_channel
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -14,9 +19,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
-from src.eval.eval_unet import eval_net
+from src.eval.eval_floe import eval_net
 from src.models.unet.unet_model import UNet, SmallUNet
-from src.datasets.ice import BasicDatasetIce, Ice
+from src.datasets.floe import DatasetFloe_Ice_Mask, DatasetValidateFloe
 from torch.utils.data import DataLoader
 import wandb
 
@@ -28,7 +33,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=20,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
@@ -44,27 +49,17 @@ def get_args():
     return parser.parse_args()
 
 
-def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_scale=0.35, img_crop=320):
-    train_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                    os.path.join(data_dir, 'txt_files'), 'train', img_scale, img_crop)
-    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
-                  os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
+def train_net(net, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img_crop=320):
+    train_set = DatasetFloe_Ice_Mask(img_crop, 'train')
+    val_set = DatasetValidateFloe()
 
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=batch_size)
-    # dir_img = os.path.join(data_dir, 'imgs')
-    # dir_mask = os.path.join(data_dir, 'masks')
-    # dir_txt = os.path.join(data_dir, 'txt_files')
-    # train_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'train', img_scale)
-    # val_set = BasicDatasetIce(dir_img, dir_mask, dir_txt, 'val', img_scale)
-    # train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    # val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True,
-    #                         drop_last=True)
 
     global_step = 0
 
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(epochs):
@@ -72,18 +67,18 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
         epoch_loss = 0
         with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                imgs = batch['image']
+                imgs = batch['image'][:, 0, :, :].unsqueeze(1)
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
-                    f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
+                # assert imgs.shape[1] == net.n_channels, \
+                #     f'Network has been defined with {net.n_channels} input channels, ' \
+                #     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
+                #     'the images are loaded correctly.'
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = net(imgs)
+                masks_pred = net(imgs)['out']
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
@@ -131,10 +126,18 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
-    # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
-    # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
+    # net = DSCSmallUNetLBP(n_channels=1, n_classes=2)
+    # net = UNetLBP(n_channels=1, n_classes=2)
+    # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
+    # net = SmallUNetLBP(n_channels=1, n_classes=2)
+    # net = lraspp_mobilenet_v3_large(num_classes=2)
+    # net = lraspp_mobilenet_v3_large_one_channel
+    net = deeplabv3_mobilenet_v3_large_one_channel
+    # net = UNet(n_channels=1, n_classes=2, bilinear=True)
+    # net = SmallUNet(n_channels=1, n_classes=2, bilinear=True)
+    # net = UNetDSC(n_channels=1, n_classes=2, bilinear=True)
+    # net = DSCUNetLBP(n_channels=1, n_classes=2)
     wandb.watch(net)
 
     if args.load:
@@ -143,12 +146,8 @@ if __name__ == '__main__':
     net.to(device=device)
 
     try:
-        start_time = time.time()
-        train_net(net=net, data_dir=args.data_dir, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
-                  device=device,
-                  img_scale=args.scale, img_crop=args.crop)
-        total_time = time.time() - start_time
-        print('Total Time: ', total_time)
+        train_net(net=net, epochs=args.epochs, batch_size=args.batchsize, lr=args.lr,
+                  device=device, img_crop=args.crop)
     except KeyboardInterrupt:
         torch.save(net.state_dict(), '../INTERRUPTED.pth')
         try:
