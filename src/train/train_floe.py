@@ -7,6 +7,7 @@ from torchvision.models.segmentation import lraspp_mobilenet_v3_large
 from src.models.dsc.dsc_lbc_unet import DSCSmallUNetLBP, DSCUNetLBP
 from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
 from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
+from src.models.mobilenets import lraspp_mobilenet_v3_large_one_channel, deeplabv3_mobilenet_v3_large_one_channel
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -58,7 +59,7 @@ def train_net(net, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img
     global_step = 0
 
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(epochs):
@@ -69,15 +70,15 @@ def train_net(net, device, epochs=20, batch_size=1, lr=0.0001, save_cp=True, img
                 imgs = batch['image'][:, 0, :, :].unsqueeze(1)
                 true_masks = batch['mask']
 
-                assert imgs.shape[1] == net.n_channels, \
-                    f'Network has been defined with {net.n_channels} input channels, ' \
-                    f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
+                # assert imgs.shape[1] == net.n_channels, \
+                #     f'Network has been defined with {net.n_channels} input channels, ' \
+                #     f'but loaded images have {imgs.shape[1]} channels. Please check that ' \
+                #     'the images are loaded correctly.'
 
                 imgs = imgs.to(device=device, dtype=torch.float32)
                 target = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = net(imgs)
+                masks_pred = net(imgs)['out']
                 probs = F.softmax(masks_pred, dim=1)
                 argmx = torch.argmax(probs, dim=1).to(dtype=torch.float32)
 
@@ -129,8 +130,10 @@ if __name__ == '__main__':
     # net = DSCSmallUNetLBP(n_channels=1, n_classes=2)
     # net = UNetLBP(n_channels=1, n_classes=2)
     # net = SmallUNetDSC(n_channels=1, n_classes=2, bilinear=True)
-    net = SmallUNetLBP(n_channels=1, n_classes=2)
+    # net = SmallUNetLBP(n_channels=1, n_classes=2)
     # net = lraspp_mobilenet_v3_large(num_classes=2)
+    # net = lraspp_mobilenet_v3_large_one_channel
+    net = deeplabv3_mobilenet_v3_large_one_channel
     # net = UNet(n_channels=1, n_classes=2, bilinear=True)
     # net = SmallUNet(n_channels=1, n_classes=2, bilinear=True)
     # net = UNetDSC(n_channels=1, n_classes=2, bilinear=True)

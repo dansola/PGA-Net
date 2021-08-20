@@ -132,3 +132,40 @@ class DatasetValidateFloe(Dataset):
         img, mask = self.transform(img, mask, ice)
         sample = {'image': img, 'mask': mask}
         return sample
+
+class DatasetTestFloe(Dataset):
+    """
+    Expecting: image_patches be 4-channel TIF, 8-bit
+             : mask_patches be 4-channel TIF, 8-bit
+             : ice_con_patches be 1-channel TIF, 0->120, 120 means land, 0->100 is the ice concentration
+    """
+
+    def __init__(self):
+        self.path_images = '/home/dsola/repos/PGA-Net/data/floes/test_premade_patches_multi/image_patches/'
+        self.path_masks = '/home/dsola/repos/PGA-Net/data/floes/test_premade_patches_multi/mask_patches/'
+        self.file_names = os.listdir(self.path_images)
+
+    def transform(self, img, mask):
+        # To Tensor
+        img = TF.to_tensor(img)
+        mask = TF.to_tensor(mask)
+        # Ice concentration patches: land_mass = 120
+        #                          : ice_conc = 0 -> 100
+
+        # img = img.float() / 255  # 0->1
+        mask = torch.round(mask)  # [0,1]
+
+        # img = torch.stack((img.squeeze(), ice.squeeze()), dim=0)  # all img, mask, ice as_type(float32)
+
+        return img, mask
+
+    def __len__(self):
+        return (len(self.file_names))
+
+    def __getitem__(self, index):
+        img = Image.open(self.path_images + self.file_names[index])
+        mask = Image.open(self.path_masks + self.file_names[index])
+
+        img, mask = self.transform(img, mask)
+        sample = {'image': img, 'mask': mask}
+        return sample

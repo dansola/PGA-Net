@@ -18,7 +18,7 @@ def eval_net(net, loader, device):
             true_masks = true_masks.to(device=device, dtype=torch.long)
 
             with torch.no_grad():
-                mask_pred = net(imgs)
+                mask_pred = net(imgs)['out']
 
             probs = F.softmax(mask_pred, dim=1)
             argmx = torch.argmax(probs, dim=1)
