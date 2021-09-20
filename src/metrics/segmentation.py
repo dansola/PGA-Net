@@ -38,3 +38,13 @@ def jaccard_index(hist):
     jaccard = A_inter_B / (A + B - A_inter_B + EPS)
     avg_jacc = nanmean(jaccard)
     return avg_jacc, jaccard
+
+
+def fw_miou(hist):
+    hist = hist.T
+    classes = len(hist)
+    class_scores = torch.zeros(classes)
+    for i in range(classes):
+        class_scores[i] = torch.sum(hist[i, :]) * hist[i, i] / (max(1, torch.sum(hist[i, :])))
+    fmiou = torch.sum(class_scores) / torch.sum(hist)
+    return fmiou
