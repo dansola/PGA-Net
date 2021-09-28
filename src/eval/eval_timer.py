@@ -4,11 +4,11 @@ import sys
 import time
 
 from src.models.dsc.dsc_lbc_unet import DSCUNetLBP, DSCSmallUNetLBP, SkinnyDSCSmallUNetLBP
-from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC, SkinnySmallUNetDSC
 from src.models.lbcnn.axial_lbcnn import AxialUNetLBC, SmallAxialUNetLBC
 from src.models.lbcnn.axial_unet import AxialUNet, SmallAxialUNet
-from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
-from src.models.unet.unet_model import UNet, SmallUNet
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP, SkinnySmallUNetLBP
+from src.models.unet.unet_model import UNet, SmallUNet, SkinnySmallUNet
 from torchvision.models.segmentation import deeplabv3_mobilenet_v3_large, lraspp_mobilenet_v3_large
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
@@ -110,6 +110,12 @@ if __name__ == '__main__':
         net = DSCSmallUNetLBP(3, 3)
     elif args.model == 'skinny_small_dsc_lbc_unet':
         net = SkinnyDSCSmallUNetLBP(3, 3)
+    elif args.model == 'skinny_small_unet':
+        net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'skinny_small_dsc_unet':
+        net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'skinny_small_lbc_unet':
+        net = SkinnySmallUNetLBP(3, 3)
     else:
         raise ValueError('Please enter a valid model name.')
 
