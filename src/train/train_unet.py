@@ -2,7 +2,9 @@ import os
 import sys
 import time
 
-from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
+from src.models.dsc.dsc_lbc_unet import SkinnyDSCSmallUNetLBP, SuperSkinnyDSCSmallUNetLBP
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC, SkinnySmallUNetDSC
+from src.models.lbcnn.lbc_unet import SkinnySmallUNetLBP
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -15,7 +17,7 @@ import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 from src.eval.eval_unet import eval_net
-from src.models.unet.unet_model import UNet, SmallUNet
+from src.models.unet.unet_model import UNet, SmallUNet, SkinnySmallUNet
 from src.datasets.ice import BasicDatasetIce, Ice
 from torch.utils.data import DataLoader
 import wandb
@@ -131,10 +133,15 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = SkinnyDSCSmallUNetLBP(3, 3)
+    # net = SuperSkinnyDSCSmallUNetLBP(3, 3)
     # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    # net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    # net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)
+    net = SkinnySmallUNetLBP(3, 3)
     wandb.watch(net)
 
     if args.load:

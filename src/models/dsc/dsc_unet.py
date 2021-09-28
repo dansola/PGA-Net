@@ -61,6 +61,31 @@ class SmallUNetDSC(nn.Module):
         return logits
 
 
+class SkinnySmallUNetDSC(nn.Module):
+    def __init__(self, n_channels, n_classes, bilinear=True):
+        super(SkinnySmallUNetDSC, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DoubleConvDSC(n_channels, 32)
+        self.down1 = DownDSC(32, 64)
+        factor = 2 if bilinear else 1
+        self.down2 = DownDSC(64, 128 // factor)
+        self.up1 = UpDSC(128, 64 // factor, bilinear)
+        self.up2 = UpDSC(64, 32, bilinear)
+        self.outc = OutConvDSC(32, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x = self.up1(x3, x2)
+        x = self.up2(x, x1)
+        logits = self.outc(x)
+        return logits
+
+
 class Conv2dDSC(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()

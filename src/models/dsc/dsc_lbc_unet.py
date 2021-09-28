@@ -61,6 +61,56 @@ class DSCSmallUNetLBP(nn.Module):
         return logits
 
 
+class SkinnyDSCSmallUNetLBP(nn.Module):
+    def __init__(self, n_channels, n_classes, bilinear=True):
+        super(SkinnyDSCSmallUNetLBP, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DSCDSCBlockLBPUNet(n_channels, 32)
+        self.down1 = DSCDownLBP(32, 64)
+        factor = 2 if bilinear else 1
+        self.down2 = DSCDownLBP(64, 128 // factor)
+        self.up1 = DSCUpLBP(128, 64 // factor, bilinear)
+        self.up2 = DSCUpLBP(64, 32, bilinear)
+        self.outc = DSCDSCBlockLBPUNet(32, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x = self.up1(x3, x2)
+        x = self.up2(x, x1)
+        logits = self.outc(x)
+        return logits
+
+
+class SuperSkinnyDSCSmallUNetLBP(nn.Module):
+    def __init__(self, n_channels, n_classes, bilinear=True):
+        super(SuperSkinnyDSCSmallUNetLBP, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DSCDSCBlockLBPUNet(n_channels, 16)
+        self.down1 = DSCDownLBP(16, 32)
+        factor = 2 if bilinear else 1
+        self.down2 = DSCDownLBP(32, 64 // factor)
+        self.up1 = DSCUpLBP(64, 32 // factor, bilinear)
+        self.up2 = DSCUpLBP(32, 16, bilinear)
+        self.outc = DSCDSCBlockLBPUNet(16, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x = self.up1(x3, x2)
+        x = self.up2(x, x1)
+        logits = self.outc(x)
+        return logits
+
+
 class DSCConvLBP(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0.5):
         super().__init__(in_channels, out_channels, kernel_size, padding=1, bias=False, dilation=1, groups=in_channels)
