@@ -9,20 +9,20 @@ do
 #  python eval_timer.py --device cuda --model lbc_unet --file_number $NUMBER
 #  python eval_timer.py --device cuda --model dsc_lbc_unet --file_number $NUMBER
 #  python eval_timer.py --device cuda --model skinny_small_dsc_lbc_unet --file_number $NUMBER
-#  python eval_timer.py --device cuda --model skinny_small_unet --file_number $NUMBER
-#  python eval_timer.py --device cuda --model skinny_small_dsc_unet --file_number $NUMBER
+  python eval_timer.py --device cuda --model skinny_small_unet --file_number $NUMBER
+  python eval_timer.py --device cuda --model skinny_small_dsc_unet --file_number $NUMBER
 #  python eval_timer.py --device cuda --model skinny_small_lbc_unet --file_number $NUMBER
 #  python eval_timer.py --device cuda --model deeplab_mobile_net --file_number $NUMBER
 #  python eval_timer.py --device cuda --model lraspp_mobile_net --file_number $NUMBER
 
-	python eval_timer.py --device cpu --model unet --file_number $NUMBER
-	python eval_timer.py --device cpu --model dsc_unet --file_number $NUMBER
-  python eval_timer.py --device cpu --model lbc_unet --file_number $NUMBER
-  python eval_timer.py --device cpu --model dsc_lbc_unet --file_number $NUMBER
-  python eval_timer.py --device cpu --model skinny_small_dsc_lbc_unet --file_number $NUMBER
+#	python eval_timer.py --device cpu --model unet --file_number $NUMBER
+#	python eval_timer.py --device cpu --model dsc_unet --file_number $NUMBER
+#  python eval_timer.py --device cpu --model lbc_unet --file_number $NUMBER
+#  python eval_timer.py --device cpu --model dsc_lbc_unet --file_number $NUMBER
+#  python eval_timer.py --device cpu --model skinny_small_dsc_lbc_unet --file_number $NUMBER
   python eval_timer.py --device cpu --model skinny_small_unet --file_number $NUMBER
   python eval_timer.py --device cpu --model skinny_small_dsc_unet --file_number $NUMBER
-  python eval_timer.py --device cpu --model skinny_small_lbc_unet --file_number $NUMBER
-  python eval_timer.py --device cpu --model deeplab_mobile_net --file_number $NUMBER
-  python eval_timer.py --device cpu --model lraspp_mobile_net --file_number $NUMBER
+#  python eval_timer.py --device cpu --model skinny_small_lbc_unet --file_number $NUMBER
+#  python eval_timer.py --device cpu --model deeplab_mobile_net --file_number $NUMBER
+#  python eval_timer.py --device cpu --model lraspp_mobile_net --file_number $NUMBER
 done

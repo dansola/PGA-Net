@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 class ConvLBP(nn.Conv2d):
-    def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0.5):
+    def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0):
         super().__init__(in_channels, out_channels, kernel_size, padding=1, bias=False, dilation=1)
         weights = next(self.parameters())
         matrix_proba = torch.FloatTensor(weights.data.shape).fill_(0.5)  # same shape as weights filled with 0.5
@@ -42,19 +43,21 @@ class BlockLBPUNet(nn.Module):
 
     def forward(self, x):
         res = x
-        x = self.batch_norm(x)
-        x = F.relu(self.conv_lbp(x))
-        x.add_(res)
-        x = self.conv_1x1(x)
-        return x
+        x2 = self.batch_norm(x)
+        x3 = F.relu(self.conv_lbp(x2))
+        # x_detached = x3.detach().cpu().numpy()
+        # print(np.all(x_detached==0))
+        x3.add_(res)
+        x4 = self.conv_1x1(x3)
+        return x4
 
 
 class DownLBP(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, sparsity=0.5):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            BlockLBPUNet(in_channels, out_channels)
+            BlockLBPUNet(in_channels, out_channels, sparsity)
         )
 
     def forward(self, x):
@@ -62,14 +65,14 @@ class DownLBP(nn.Module):
 
 
 class UpLBP(nn.Module):
-    def __init__(self, in_channels, out_channels, bilinear=True):
+    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.5):
         super().__init__()
         if bilinear:
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.conv = BlockLBPUNet(in_channels, out_channels, in_channels // 2)
+            self.conv = BlockLBPUNet(in_channels, out_channels, sparsity)
         else:
             self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = BlockLBPUNet(in_channels, out_channels)
+            self.conv = BlockLBPUNet(in_channels, out_channels, sparsity)
 
     def forward(self, x1, x2):
         x1 = self.up(x1)

@@ -11,15 +11,15 @@ class DSCUNetLBP(nn.Module):
         self.bilinear = bilinear
 
         self.inc = DSCDSCBlockLBPUNet(n_channels, 64)
-        self.down1 = DSCDownLBP(64, 128)
-        self.down2 = DSCDownLBP(128, 256)
-        self.down3 = DSCDownLBP(256, 512)
+        self.down1 = DSCDownLBP(64, 128, sparsity=0.5)
+        self.down2 = DSCDownLBP(128, 256, sparsity=0.5)
+        self.down3 = DSCDownLBP(256, 512, sparsity=0.5)
         factor = 2 if bilinear else 1
-        self.down4 = DSCDownLBP(512, 1024 // factor)
-        self.up1 = DSCUpLBP(1024, 512 // factor, bilinear)
-        self.up2 = DSCUpLBP(512, 256 // factor, bilinear)
-        self.up3 = DSCUpLBP(256, 128 // factor, bilinear)
-        self.up4 = DSCUpLBP(128, 64, bilinear)
+        self.down4 = DSCDownLBP(512, 1024 // factor, sparsity=0.5)
+        self.up1 = DSCUpLBP(1024, 512 // factor, bilinear, sparsity=0.5)
+        self.up2 = DSCUpLBP(512, 256 // factor, bilinear, sparsity=0.5)
+        self.up3 = DSCUpLBP(256, 128 // factor, bilinear, sparsity=0.5)
+        self.up4 = DSCUpLBP(128, 64, bilinear, sparsity=0.5)
         self.outc = DSCDSCBlockLBPUNet(64, n_classes)
 
     def forward(self, x):
@@ -62,19 +62,19 @@ class DSCSmallUNetLBP(nn.Module):
 
 
 class SkinnyDSCSmallUNetLBP(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=True):
+    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.5):
         super(SkinnyDSCSmallUNetLBP, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        self.inc = DSCDSCBlockLBPUNet(n_channels, 32)
-        self.down1 = DSCDownLBP(32, 64)
+        self.inc = DSCDSCBlockLBPUNet(n_channels, 32, sparsity)
+        self.down1 = DSCDownLBP(32, 64, sparsity)
         factor = 2 if bilinear else 1
-        self.down2 = DSCDownLBP(64, 128 // factor)
-        self.up1 = DSCUpLBP(128, 64 // factor, bilinear)
-        self.up2 = DSCUpLBP(64, 32, bilinear)
-        self.outc = DSCDSCBlockLBPUNet(32, n_classes)
+        self.down2 = DSCDownLBP(64, 128 // factor, sparsity)
+        self.up1 = DSCUpLBP(128, 64 // factor, bilinear, sparsity)
+        self.up2 = DSCUpLBP(64, 32, bilinear, sparsity)
+        self.outc = DSCDSCBlockLBPUNet(32, n_classes, sparsity)
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -158,11 +158,11 @@ class DSCDSCBlockLBPUNet(nn.Module):
 
 
 class DSCDownLBP(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, sparsity):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            DSCDSCBlockLBPUNet(in_channels, out_channels)
+            DSCDSCBlockLBPUNet(in_channels, out_channels, sparsity)
         )
 
     def forward(self, x):
@@ -170,14 +170,14 @@ class DSCDownLBP(nn.Module):
 
 
 class DSCUpLBP(nn.Module):
-    def __init__(self, in_channels, out_channels, bilinear=True):
+    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.5):
         super().__init__()
         if bilinear:
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.conv = DSCDSCBlockLBPUNet(in_channels, out_channels, in_channels // 2)
+            self.conv = DSCDSCBlockLBPUNet(in_channels, out_channels, sparsity)
         else:
             self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-            self.conv = DSCDSCBlockLBPUNet(in_channels, out_channels)
+            self.conv = DSCDSCBlockLBPUNet(in_channels, out_channels, sparsity)
 
     def forward(self, x1, x2):
         x1 = self.up(x1)

@@ -42,6 +42,8 @@ def get_args():
                         help='Downscaling factor of the images')
     parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
                         help='Height and width of images and masks.')
+    parser.add_argument('-sp', '--sparsity', dest='sparsity', type=float, default=0.5,
+                        help='Sparsity of LBP filters.')
 
     return parser.parse_args()
 
@@ -133,15 +135,16 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    sparsity = args.sparsity / 100
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    # net = SkinnyDSCSmallUNetLBP(3, 3)
+    # net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=sparsity)
     # net = SuperSkinnyDSCSmallUNetLBP(3, 3)
     # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
-    # net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     # net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)
-    net = SkinnySmallUNetLBP(3, 3)
+    # net = SkinnySmallUNetLBP(3, 3, sparsity=sparsity)
     wandb.watch(net)
 
     if args.load:

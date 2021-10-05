@@ -37,13 +37,15 @@ def get_args():
 def get_model_and_checkpoint(model_name):
     if model_name == 'small_unet':
         net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)
-        checkpoint = 'noble_forest_358_skinny_small_unet'
+        # checkpoint = 'noble_forest_358_skinny_small_unet'
+        checkpoint = 'silvery_vortex_424_skinny_unet_single_conv'
     elif model_name == 'small_lbc_unet':
         net = SkinnySmallUNetLBP(3, 3)
         checkpoint = 'trim_field_359_skinny_small_lbc_unet'
     elif model_name == 'small_dsc_unet':
         net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
-        checkpoint = 'ancient_grass_357_skinny_small_dsc_unet'
+        # checkpoint = 'ancient_grass_357_skinny_small_dsc_unet'
+        checkpoint = 'eager_field_423_skinny_dsc_unet_single_conv'
     elif model_name == 'small_dsc_lbc_unet':
         net = SkinnyDSCSmallUNetLBP(3, 3)
         checkpoint = 'clear_lake_355_skinny_small_dsc_lbc_unet'

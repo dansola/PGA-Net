@@ -61,19 +61,19 @@ class SmallUNetLBP(nn.Module):
 
 
 class SkinnySmallUNetLBP(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=True):
+    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.5):
         super(SkinnySmallUNetLBP, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        self.inc = BlockLBPUNet(n_channels, 32)
-        self.down1 = DownLBP(32, 64)
+        self.inc = BlockLBPUNet(n_channels, 32, sparsity)
+        self.down1 = DownLBP(32, 64, sparsity)
         factor = 2 if bilinear else 1
-        self.down2 = DownLBP(64, 128 // factor)
-        self.up1 = UpLBP(128, 64 // factor, bilinear)
-        self.up2 = UpLBP(64, 32, bilinear)
-        self.outc = BlockLBPUNet(32, n_classes)
+        self.down2 = DownLBP(64, 128 // factor, sparsity)
+        self.up1 = UpLBP(128, 64 // factor, bilinear, sparsity)
+        self.up2 = UpLBP(64, 32, bilinear, sparsity)
+        self.outc = BlockLBPUNet(32, n_classes, sparsity)
 
     def forward(self, x):
         x1 = self.inc(x)
