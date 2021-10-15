@@ -62,8 +62,15 @@ for epoch in range(N_EPOCHS):
 
     hist = _fast_hist(masks.squeeze(2).to(dtype=torch.long, device='cpu'), preds.to(dtype=torch.long, device='cpu'), 3)
 
-    acc_dict[epoch+1] = per_class_pixel_accuracy(hist)[0].item()
-    iou_dict[epoch + 1] = jaccard_index(hist)[0].item()
+    l_acc_temp = per_class_pixel_accuracy(hist)[1].tolist()
+    l_acc_temp.append(per_class_pixel_accuracy(hist)[0].item())
+    acc_dict[epoch + 1] = l_acc_temp
+    l_iou_temp = jaccard_index(hist)[1].tolist()
+    l_iou_temp.append(jaccard_index(hist)[0].item())
+    iou_dict[epoch + 1] = l_iou_temp
+
+    # acc_dict[epoch+1] = per_class_pixel_accuracy(hist)[0].item()
+    # iou_dict[epoch + 1] = jaccard_index(hist)[0].item()
 
     del model
     del optimizer
@@ -80,8 +87,8 @@ for epoch in range(N_EPOCHS):
 
 model_name = checkpoint_path.split('/')[-2]
 
-with open(f'../results/{model_name}-mean-acc-epoch-128-256-size.json', 'w') as fp:
+with open(f'../results/val_set_per_class/{model_name}-mean-acc-epoch.json', 'w') as fp:
     json.dump(acc_dict, fp)
 
-with open(f'../results/{model_name}-mean-iou-epoch-128-256-size.json', 'w') as fp:
+with open(f'../results/val_set_per_class/{model_name}-mean-iou-epoch.json', 'w') as fp:
     json.dump(iou_dict, fp)

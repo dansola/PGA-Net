@@ -8,12 +8,12 @@ from torch.utils.data import DataLoader
 import torch
 
 from src.datasets.ice import Ice
-from src.models.dsc.dsc_lbc_unet import DSCUNetLBP, DSCSmallUNetLBP, SkinnyDSCSmallUNetLBP
-from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC, SkinnySmallUNetDSC
+from src.models.dsc.dsc_lbc_unet import DSCUNetLBP, DSCSmallUNetLBP
+from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC
 from src.models.lbcnn.axial_lbcnn import AxialUNetLBC, SmallAxialUNetLBC
 from src.models.lbcnn.axial_unet import AxialUNet, SmallAxialUNet
-from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP, SkinnySmallUNetLBP
-from src.models.unet.unet_model import UNet, SmallUNet, SkinnySmallUNet
+from src.models.lbcnn.lbc_unet import UNetLBP, SmallUNetLBP
+from src.models.unet.unet_model import UNet, SmallUNet
 from loguru import logger as log
 from torch import nn
 import json
@@ -28,28 +28,31 @@ from src.train.utils import load_ckp
 def get_args():
     parser = argparse.ArgumentParser(description='get metrics for test.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-m', '--model', dest='model', type=str, default='small_dsc_lbc_unet',
+    parser.add_argument('-m', '--model', dest='model', type=str, default='unet',
                         help='Model to use.')
 
     return parser.parse_args()
 
 
 def get_model_and_checkpoint(model_name):
-    if model_name == 'small_unet':
-        net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)
-        # checkpoint = 'noble_forest_358_skinny_small_unet'
-        checkpoint = 'silvery_vortex_424_skinny_unet_single_conv'
-    elif model_name == 'small_lbc_unet':
-        net = SkinnySmallUNetLBP(3, 3)
-        checkpoint = 'trim_field_359_skinny_small_lbc_unet'
-    elif model_name == 'small_dsc_unet':
-        net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
-        # checkpoint = 'ancient_grass_357_skinny_small_dsc_unet'
-        checkpoint = 'eager_field_423_skinny_dsc_unet_single_conv'
-    elif model_name == 'small_dsc_lbc_unet':
-        net = SkinnyDSCSmallUNetLBP(3, 3)
-        # checkpoint = 'clear_lake_355_skinny_small_dsc_lbc_unet'
-        checkpoint = 'skinny_small_dsc_lbc_unet_sparcity_87'
+    if model_name == 'unet':
+        net = UNet(n_channels=3, n_classes=3, bilinear=True)
+        checkpoint = 'frosty_sponge_239_unet_ice'
+    elif model_name == 'lbc_unet':
+        net = UNetLBP(3, 3)
+        checkpoint = 'worthy_wood_227_lbc_unet_ice'
+    elif model_name == 'deeplab_mobile_net':
+        net = deeplabv3_mobilenet_v3_large(num_classes=3)
+        checkpoint = 'vivid_donkey_305_deeplab_mobilenet_ice'
+    elif model_name == 'lraspp_mobile_net':
+        net = lraspp_mobilenet_v3_large(num_classes=3)
+        checkpoint = 'clean_darkness_312_laraspp_mobilenet_ice'
+    elif model_name == 'dsc_unet':
+        net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
+        checkpoint = 'helpful_fire_308_unet_dsc_ice'
+    elif model_name == 'dsc_lbc_unet':
+        net = DSCUNetLBP(3, 3)
+        checkpoint = 'youthful_microwave_310_lbc_dsc_unet_ice'
     else:
         raise ValueError('Please enter a valid model name.')
     return net, checkpoint
@@ -66,7 +69,7 @@ if __name__ == '__main__':
     img_scale = 0.35
     img_crop = 256
 
-    val_set = Ice(os.path.join(data_dir, 'imgs'), os.path.join(data_dir, 'masks'),
+    val_set = Ice(os.path.join(data_dir, 'imgs_snow'), os.path.join(data_dir, 'masks'),
                   os.path.join(data_dir, 'txt_files'), 'val', img_scale, img_crop)
 
     val_loader = DataLoader(val_set, batch_size=batch_size)
@@ -109,24 +112,16 @@ if __name__ == '__main__':
 
         hist = _fast_hist(masks.squeeze(2).to(dtype=torch.long, device='cpu'), preds.to(dtype=torch.long, device='cpu'), 3)
 
-        l_acc_temp = per_class_pixel_accuracy(hist)[1].tolist()
-        l_acc_temp.append(per_class_pixel_accuracy(hist)[0].item())
-        acc_dict[epoch + 1] = l_acc_temp
-        l_iou_temp = jaccard_index(hist)[1].tolist()
-        l_iou_temp.append(jaccard_index(hist)[0].item())
-        iou_dict[epoch + 1] = l_iou_temp
-
-        # acc_dict[epoch + 1] = per_class_pixel_accuracy(hist)[0].item()
-        # iou_dict[epoch + 1] = jaccard_index(hist)[0].item()
-        # loss_dict[epoch + 1] = criterion(outputs.squeeze(1), masks.squeeze(1)).item()
+        acc_dict[epoch + 1] = per_class_pixel_accuracy(hist)[0].item()
+        iou_dict[epoch + 1] = jaccard_index(hist)[0].item()
+        # loss_dict[epoch + 1] = criterion(outputs.reshape((outputs.shape[0]*outputs.shape[1], outputs.shape[2], outputs.shape[3], outputs.shape[4])),
+        #                                  masks.reshape((masks.shape[0]*masks.shape[1], masks.shape[3], masks.shape[4]))).item()
 
         del net
         del masks
         del preds
-        del outputs
         del mask_list
         del pred_list
-        del output_list
         del img
         del mask
         del output
@@ -136,11 +131,11 @@ if __name__ == '__main__':
 
     model_name = checkpoint_path.split('/')[-2]
 
-    with open(f'../results/val_set_per_class/{model_name}-mean-acc-epoch.json', 'w') as fp:
+    with open(f'../results/tmp/{model_name}-mean-acc-epoch.json', 'w') as fp:
         json.dump(acc_dict, fp)
 
-    with open(f'../results/val_set_per_class/{model_name}-mean-iou-epoch.json', 'w') as fp:
+    with open(f'../results/tmp/{model_name}-mean-iou-epoch.json', 'w') as fp:
         json.dump(iou_dict, fp)
 
-    # with open(f'../results/val_set_per_class/{model_name}-mean-loss-epoch.json', 'w') as fp:
+    # with open(f'../results/tmp/{model_name}-mean-loss-epoch.json', 'w') as fp:
     #     json.dump(loss_dict, fp)
