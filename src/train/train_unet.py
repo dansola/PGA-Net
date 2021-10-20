@@ -40,7 +40,7 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=320,
                         help='Height and width of images and masks.')
     parser.add_argument('-sp', '--sparsity', dest='sparsity', type=float, default=0.5,
                         help='Sparsity of LBP filters.')
@@ -137,10 +137,10 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     sparsity = args.sparsity / 100
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    # net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=sparsity)
+    net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=0.8)
     # net = SuperSkinnyDSCSmallUNetLBP(3, 3)
     # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
-    net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    # net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)
     # net = SkinnySmallUNet(n_channels=3, n_classes=3, bilinear=True)

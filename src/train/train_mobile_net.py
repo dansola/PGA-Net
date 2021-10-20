@@ -30,9 +30,9 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-d', '--data_directory', metavar='D', type=str, default='/home/dsola/repos/PGA-Net/data/',
                         help='Directory where images, masks, and txt files reside.', dest='data_dir')
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=160,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=80,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=2,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=1,
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=0.0001,
                         help='Learning rate', dest='lr')
@@ -120,8 +120,8 @@ if __name__ == '__main__':
     args = get_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # net = deeplabv3_mobilenet_v3_large(num_classes=3)
-    net = deeplabv3_resnet101(num_classes=3)
-    # net = lraspp_mobilenet_v3_large(num_classes=3)
+    # net = deeplabv3_resnet101(num_classes=3)
+    net = lraspp_mobilenet_v3_large(num_classes=3)
     wandb.watch(net)
 
     if args.load:

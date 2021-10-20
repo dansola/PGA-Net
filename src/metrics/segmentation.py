@@ -47,4 +47,4 @@ def fw_miou(hist):
     for i in range(classes):
         class_scores[i] = torch.sum(hist[i, :]) * hist[i, i] / (max(1, torch.sum(hist[i, :])))
     fmiou = torch.sum(class_scores) / torch.sum(hist)
-    return fmiou
+    return fmiou, class_scores

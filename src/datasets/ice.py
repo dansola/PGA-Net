@@ -108,7 +108,7 @@ class Ice(Dataset):
         else:
             raise TypeError(f"Please enter one of train, val, or test for split.  You entered {split}.")
 
-        self.img_ids = [i_id.strip() for i_id in open(file_name)]
+        self.img_ids = [i_id.strip() for i_id in open(file_name) if 'tif' in i_id.strip()]
         self.files = []
         for name in self.img_ids:
             img_file = os.path.join(imgs_dir, name)
@@ -190,7 +190,7 @@ class IceForVisualizing(Dataset):
         else:
             raise TypeError(f"Please enter one of train, val, or test for split.  You entered {split}.")
 
-        self.img_ids = [i_id.strip() for i_id in open(file_name)]
+        self.img_ids = [i_id.strip() for i_id in open(file_name) if 'tif' in i_id.strip()]
         self.files = []
         for name in self.img_ids:
             img_file = os.path.join(imgs_dir, name)
