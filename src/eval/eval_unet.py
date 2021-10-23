@@ -4,7 +4,7 @@ from tqdm import tqdm
 from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jaccard_index
 
 
-def eval_net(net, loader, device):
+def eval_net(net, loader, device, mobile=False):
     """Evaluation without the densecrf with the dice coefficient"""
     net.train()
     n_val = len(loader)
@@ -17,8 +17,11 @@ def eval_net(net, loader, device):
             imgs = imgs.to(device=device, dtype=torch.float32)
             true_masks = true_masks.to(device=device, dtype=torch.long)
 
-            with torch.no_grad():
-                mask_pred = net(imgs)
+            if mobile:
+                mask_pred = net(imgs)['out']
+            else:
+                with torch.no_grad():
+                    mask_pred = net(imgs)
 
             probs = F.softmax(mask_pred, dim=1)
             argmx = torch.argmax(probs, dim=1)

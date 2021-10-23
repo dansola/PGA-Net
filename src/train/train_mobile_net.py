@@ -40,7 +40,7 @@ def get_args():
                         help='Load model from a .pth file')
     parser.add_argument('-s', '--scale', dest='scale', type=float, default=0.35,
                         help='Downscaling factor of the images')
-    parser.add_argument('-c', '--crop', dest='crop', type=int, default=256,
+    parser.add_argument('-c', '--crop', dest='crop', type=int, default=320,
                         help='Height and width of images and masks.')
 
     return parser.parse_args()
