@@ -61,7 +61,7 @@ class SmallUNetLBP(nn.Module):
 
 
 class SkinnySmallUNetLBP(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.5):
+    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.8):
         super(SkinnySmallUNetLBP, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes

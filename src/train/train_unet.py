@@ -70,6 +70,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
     optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if net.n_classes > 1 else 'max', patience=2)
     criterion = nn.CrossEntropyLoss()
+    # criterion = nn.BCEWithLogitsLoss()
 
     for epoch in range(epochs):
         net.train()
@@ -99,7 +100,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
 
                 wandb.log({"Examples": example_images})
 
-                loss = criterion(masks_pred, target.squeeze(1))
+                loss = criterion(probs, target.squeeze(1))
                 wandb.log({"Training Loss": loss})
                 epoch_loss += loss.item()
 
@@ -137,9 +138,9 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     sparsity = args.sparsity / 100
     # net = UNet(n_channels=3, n_classes=3, bilinear=True)
-    net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=0.8)
+    # net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=0.8)
     # net = SuperSkinnyDSCSmallUNetLBP(3, 3)
-    # net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    net = SmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
     # net = SmallUNet(n_channels=3, n_classes=3, bilinear=True)

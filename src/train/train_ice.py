@@ -2,11 +2,11 @@ import os
 import sys
 import time
 
-from torchvision.models.segmentation import lraspp_mobilenet_v3_large
+from torchvision.models.segmentation import lraspp_mobilenet_v3_large, deeplabv3_mobilenet_v3_large
 
-from src.models.dsc.dsc_lbc_unet import SkinnyDSCSmallUNetLBP, SuperSkinnyDSCSmallUNetLBP
+from src.models.dsc.dsc_lbc_unet import SkinnyDSCSmallUNetLBP, SuperSkinnyDSCSmallUNetLBP, DSCUNetLBP
 from src.models.dsc.dsc_unet import UNetDSC, SmallUNetDSC, SkinnySmallUNetDSC
-from src.models.lbcnn.lbc_unet import SkinnySmallUNetLBP
+from src.models.lbcnn.lbc_unet import SkinnySmallUNetLBP, UNetLBP
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -142,8 +142,22 @@ if __name__ == '__main__':
 
     if args.model == 'unet':
         net = UNet(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'dsc_lbc_unet':
+        net = DSCUNetLBP(3, 3)
+    elif args.model == 'lbc_unet':
+        net = UNetLBP(3, 3)
+    elif args.model == 'dsc_unet':
+        net = UNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'small_unet':
+        net = SkinnySmallUNet(3, 3)
+    elif args.model == 'small_dsc_unet':
+        net = SkinnySmallUNetDSC(n_channels=3, n_classes=3, bilinear=True)
+    elif args.model == 'small_lbc_unet':
+        net = SkinnySmallUNetLBP(3, 3)
     elif args.model == 'small_dsc_lbc_unet':
         net = SkinnyDSCSmallUNetLBP(3, 3, sparsity=sparsity)
+    elif args.model == 'deeplab_mobile_net':
+        net = deeplabv3_mobilenet_v3_large(num_classes=3)
     elif args.model == 'lraspp_mobile_net':
         net = lraspp_mobilenet_v3_large(num_classes=3)
     else:

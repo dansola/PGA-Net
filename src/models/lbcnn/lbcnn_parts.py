@@ -35,7 +35,7 @@ class BlockLBP(nn.Module):
 
 class BlockLBPUNet(nn.Module):
 
-    def __init__(self, n_channels, out_channels, sparsity=0.5):
+    def __init__(self, n_channels, out_channels, sparsity=0.8):
         super().__init__()
         self.batch_norm = nn.BatchNorm2d(n_channels)
         self.conv_lbp = ConvLBP(n_channels, n_channels, kernel_size=3, sparsity=sparsity)
@@ -53,7 +53,7 @@ class BlockLBPUNet(nn.Module):
 
 
 class DownLBP(nn.Module):
-    def __init__(self, in_channels, out_channels, sparsity=0.5):
+    def __init__(self, in_channels, out_channels, sparsity=0.8):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
@@ -65,7 +65,7 @@ class DownLBP(nn.Module):
 
 
 class UpLBP(nn.Module):
-    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.5):
+    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.8):
         super().__init__()
         if bilinear:
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)

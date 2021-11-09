@@ -62,7 +62,7 @@ class DSCSmallUNetLBP(nn.Module):
 
 
 class SkinnyDSCSmallUNetLBP(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.5):
+    def __init__(self, n_channels, n_classes, bilinear=True, sparsity=0.8):
         super(SkinnyDSCSmallUNetLBP, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -142,7 +142,7 @@ class DSCBlockLBP(nn.Module):
 
 class DSCDSCBlockLBPUNet(nn.Module):
 
-    def __init__(self, n_channels, out_channels, sparsity=0.5):
+    def __init__(self, n_channels, out_channels, sparsity=0.8):
         super().__init__()
         self.batch_norm = nn.BatchNorm2d(n_channels)
         self.conv_lbp = DSCConvLBP(n_channels, n_channels, kernel_size=3, sparsity=sparsity)
@@ -170,7 +170,7 @@ class DSCDownLBP(nn.Module):
 
 
 class DSCUpLBP(nn.Module):
-    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.5):
+    def __init__(self, in_channels, out_channels, bilinear=True, sparsity=0.8):
         super().__init__()
         if bilinear:
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
