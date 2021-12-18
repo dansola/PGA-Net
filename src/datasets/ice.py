@@ -105,6 +105,10 @@ class Ice(Dataset):
             file_name = os.path.join(self.txt_dir, 'ice_val.txt')
         elif split == "test":
             file_name = os.path.join(self.txt_dir, 'ice_test.txt')
+        elif split == "train_orig":
+            file_name = os.path.join(self.txt_dir, 'ice_train_orig.txt')
+        elif split == "val_orig":
+            file_name = os.path.join(self.txt_dir, 'ice_val_orig.txt')
         else:
             raise TypeError(f"Please enter one of train, val, or test for split.  You entered {split}.")
 
