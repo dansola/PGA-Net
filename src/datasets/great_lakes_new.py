@@ -26,7 +26,14 @@ class Label(str, Enum):
     regression = 'regression'
 
 
-BINARY_WEIGHTS = {'no_weights': [1], Lake.erie.value: [0.95]}  # [0.4640951738517201],
+def make_one_hot(in_array: np.ndarray, classes: int) -> np.ndarray:
+    in_array = in_array.astype(int)
+    return np.eye(classes)[in_array]
+
+
+def make_one_hot_torch(in_array: torch.Tensor, classes: int) -> torch.Tensor:
+    in_array = in_array.to(dtype=int)
+    return torch.eye(classes)[in_array]
 
 
 class RMSELoss(nn.Module):
@@ -43,14 +50,17 @@ class RMSELoss(nn.Module):
 class Accuracy(nn.Module):
     name = "Accuracy"
 
-    def __init__(self):
+    def __init__(self, classes):
         super().__init__()
+        self.classes = classes
 
     def forward(self, outputs, labels):
-        outputs = (outputs > 0.5).float()
+        # outputs = (outputs > 0.5).float()
+        outputs = torch.argmax(outputs, dim=1)
+        outputs = make_one_hot_torch(outputs, classes=self.classes)
         assert outputs.shape == labels.shape, \
             f"Output are of shape {outputs.shape} and Labels are of shape {labels.shape}."
-        correct = (outputs == labels).sum()
+        correct = torch.all(torch.eq(outputs.cpu(), labels.cpu())).sum()
         return correct / len(outputs)
 
 
@@ -60,14 +70,46 @@ def unpickle(filename):
     return data
 
 
+def make_regression(imgs: np.ndarray, ice_cons: list) -> Tuple[np.ndarray, List[int]]:
+    return imgs, ice_cons
+
+
+def make_binary(imgs: np.ndarray, ice_cons: list) -> Tuple[np.ndarray, List[int]]:
+    is_binary = ((np.array(ice_cons) == 0) | (np.array(ice_cons) == 1))
+    imgs_binary = imgs[is_binary]
+    ice_cons_binary = np.array(ice_cons)[is_binary]
+    ice_con_one_hot = make_one_hot(ice_cons_binary, 2)
+    return imgs_binary, ice_con_one_hot.astype(int).tolist()
+
+
+def make_triple_class(imgs: np.ndarray, ice_cons: list) -> Tuple[np.ndarray, List[List[int]]]:
+    ice_con = np.array(ice_cons)
+    is_zero = (ice_cons == 0)
+    is_one = (ice_cons == 1)
+    is_other = ((ice_cons != 1) & (ice_cons != 0))
+    ice_con = np.where(is_zero, 0, ice_con)
+    ice_con = np.where(is_other, 1, ice_con)
+    ice_con = np.where(is_one, 2, ice_con)
+    ice_con_one_hot = make_one_hot(ice_con, 3)
+    return imgs, ice_con_one_hot.astype(int).tolist()
+
+
+BINARY_WEIGHTS = {'no_weights': [1], Lake.erie.value: [0.95]}  # [0.4640951738517201], }
+LABEL_CONVERTER = {
+    Label.binary.value: {'function': make_binary, 'classes': 2},
+    Label.triple_class.value: {'function': make_triple_class, 'classes': 3},
+    Label.regression.value: {'function': make_regression, 'classes': 1},
+}
+
+
 @dataclass
 class BaseConfig:
     data_directory: str
     lake: Lake
-    binary_labels: bool
+    label: Label
 
     def __iter__(self):
-        return iter((self.data_directory, self.lake, self.binary_labels))
+        return iter((self.data_directory, self.lake, self.label))
 
 
 @dataclass
@@ -75,20 +117,24 @@ class TrainConfig(BaseConfig):
     batch_size: int
     epochs: int
     epoch_size: int
-    class_weighted: bool
+    weight: Optional[list] = None
     split: Split = Split.train
     device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     @property
     def criterion(self):
-        if self.binary_labels:
-            if self.class_weighted:
-                pos_weight = torch.FloatTensor(BINARY_WEIGHTS[self.lake.value]).to(device=self.device)
-            else:
-                pos_weight = torch.FloatTensor(BINARY_WEIGHTS['no_weights']).to(device=self.device)
-            return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-        else:
+        if self.label is Label.regression:
             return nn.MSELoss()
+        else:
+            return nn.CrossEntropyLoss(weight=self.weight)
+        # if self.binary_labels:
+        #     if self.class_weighted:
+        #         pos_weight = torch.FloatTensor(BINARY_WEIGHTS[self.lake.value]).to(device=self.device)
+        #     else:
+        #         pos_weight = torch.FloatTensor(BINARY_WEIGHTS['no_weights']).to(device=self.device)
+        #     return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        # else:
+        #     return nn.MSELoss()
 
 
 @dataclass
@@ -99,19 +145,10 @@ class TestConfig(BaseConfig):
 
     @property
     def metric(self):
-        if not self.binary_labels:
+        if self.label is Label.regression:
             return RMSELoss()
         else:
-            return Accuracy()
-
-
-def make_binary(imgs: np.ndarray, ice_cons: list) -> Tuple[np.ndarray, List[int]]:
-    is_binary = ((np.array(ice_cons) == 0) | (np.array(ice_cons) == 1))
-    imgs_binary = imgs[is_binary]
-    ice_cons_binary = np.array(ice_cons)[is_binary]
-    return imgs_binary, ice_cons_binary.astype(int).tolist()
-
-
+            return Accuracy(classes=LABEL_CONVERTER[self.label.value]['classes'])
 
 
 class LakesRandom(Dataset):
@@ -153,8 +190,7 @@ class LakesRandom(Dataset):
         ice_cons = unpickle(self.ice_con_paths[i])[0]
         assert imgs.shape[0] == len(ice_cons), \
             f"Number of images, {imgs.shape[0]}, does not match the number of labels, {len(ice_cons)}. "
-        if self.conf.binary_labels:
-            imgs, ice_cons = make_binary(imgs, ice_cons)
+        imgs, ice_cons = LABEL_CONVERTER[self.conf.label.value]['function'](imgs, ice_cons)
         j = np.random.randint(0, imgs.shape[0] + 1, 1)[0]
         img, ice_con = imgs[j - 1], ice_cons[j - 1]
         img = img.transpose(2, 0, 1)
