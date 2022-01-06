@@ -48,12 +48,13 @@ for epoch in range(train_config.epochs):
         print(f"Training batch {i}.")
         net.train()
         inputs, labels = train_batch
-        optimizer.zero_grad()
+        # optimizer.zero_grad()
         outputs = net(inputs.to(device=device, dtype=torch.float32))
         loss = train_config.criterion(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
         metric = test_config.metric(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
         wandb.log({"Train Loss": loss})
         wandb.log({f"Train {test_config.metric.name}": metric})
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
