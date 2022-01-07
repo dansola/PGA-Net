@@ -9,6 +9,13 @@ from src.datasets.great_lakes import Lake, LakesRandom, BaseConfig, TrainConfig,
 from torch.utils.data import DataLoader
 import numpy as np
 
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics import roc_auc_score
+
 wandb.init()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -62,16 +69,24 @@ for epoch in range(train_config.epochs):
             print("Testing.")
             net.eval()
             test_loss, test_metric = [], []
+            x_vals, y_vals = [], []
             for test_batch in test_loader:
                 inputs, labels = test_batch
                 with torch.no_grad():
                     outputs = net(inputs.to(device=device, dtype=torch.float32))
                 loss = train_config.criterion(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
                 metric = test_config.metric(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
+                x_vals += ((outputs>0.5)*1).squeeze(1).cpu().detach().tolist()
+                y_vals += labels.tolist()
                 test_loss.append(loss.item())
                 test_metric.append(metric.item())
             wandb.log({"Test Loss": np.mean(test_loss)})
             wandb.log({f"Test {test_config.metric.name}": np.mean(test_metric)})
+            wandb.log({"accuracy_score": accuracy_score(x_vals, y_vals)})
+            wandb.log({"precision_score": precision_score(x_vals, y_vals)})
+            wandb.log({"recall_score": recall_score(x_vals, y_vals)})
+            wandb.log({"f1_score": f1_score(x_vals, y_vals)})
+            # wandb.log({"roc_auc_score": roc_auc_score(x_vals, y_vals)})
     try:
         os.mkdir('../checkpoints/')
     except OSError:

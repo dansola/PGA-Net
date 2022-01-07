@@ -60,7 +60,7 @@ class Accuracy(nn.Module):
         outputs = make_one_hot_torch(outputs, classes=self.classes)
         assert outputs.shape == labels.shape, \
             f"Output are of shape {outputs.shape} and Labels are of shape {labels.shape}."
-        correct = torch.all(torch.eq(outputs.cpu(), labels.cpu())).sum()
+        correct = torch.all(torch.eq(outputs.cpu(), labels.cpu()), dim=1).sum()
         return correct / len(outputs)
 
 
