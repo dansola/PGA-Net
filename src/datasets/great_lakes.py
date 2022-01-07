@@ -112,8 +112,6 @@ def make_binary(imgs: np.ndarray, ice_cons: list) -> Tuple[np.ndarray, List[int]
     return imgs_binary, ice_cons_binary.astype(int).tolist()
 
 
-
-
 class LakesRandom(Dataset):
     def __init__(self, conf: Union[TrainConfig, TestConfig]):
         self.conf = conf

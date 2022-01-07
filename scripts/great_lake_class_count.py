@@ -4,7 +4,7 @@ import numpy as np
 
 data_directory = "/home/dsola/repos/PGA-Net/data/patch20"
 lake = Lake.erie
-split = Split.train
+split = Split.test
 
 text_file_path = os.path.join(data_directory, f"imlist_{split.value}_{lake.value}.txt")
 

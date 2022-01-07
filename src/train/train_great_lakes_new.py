@@ -19,7 +19,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Running on {device}.")
 
 data_directory = "/home/dsola/repos/PGA-Net/data/patch20"
-lake = Lake.erie
+lake = Lake.ontario
 label = Label.binary
 weight = torch.Tensor([1, 1]).to(device=device)
 batch_size = 10
@@ -38,10 +38,11 @@ train_loader = DataLoader(train_set, batch_size=train_config.batch_size, shuffle
 test_set = LakesRandom(test_config)
 test_loader = DataLoader(test_set, batch_size=test_config.batch_size, shuffle=True)
 
-net = AndreaNet(classes=2)
-# net = resnet101(num_classes=1)
+# net = AndreaNet(classes=2)
+net = resnet101(num_classes=2)
 # net = resnet18(num_classes=2)
-# net.conv1 = nn.Conv2d(2, 64, kernel_size=7, stride=2, padding=3, bias=False)
+net.conv1 = nn.Conv2d(2, 64, kernel_size=7, stride=2, padding=3, bias=False)
+softmax = nn.Softmax(dim=1)
 net = net.to(device=device)
 wandb.watch(net)
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
@@ -54,9 +55,8 @@ for epoch in range(train_config.epochs):
         inputs, labels = train_batch
         optimizer.zero_grad()
         outputs = net(inputs.to(device=device, dtype=torch.float32))
-        # loss = train_config.criterion(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
+        outputs = softmax(outputs)
         loss = train_config.criterion(outputs, torch.argmax(labels, dim=1).to(device=device))
-        # metric = test_config.metric(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
         metric = test_config.metric(outputs, labels.to(device=device, dtype=torch.float32))
         wandb.log({"Train Loss": loss})
         wandb.log({f"Train {test_config.metric.name}": metric})
@@ -72,8 +72,7 @@ for epoch in range(train_config.epochs):
                 inputs, labels = test_batch
                 with torch.no_grad():
                     outputs = net(inputs.to(device=device, dtype=torch.float32))
-                # loss = train_config.criterion(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
-                # metric = test_config.metric(outputs.squeeze(1), labels.to(device=device, dtype=torch.float32))
+                    outputs = softmax(outputs)
                 loss = train_config.criterion(outputs, torch.argmax(labels, dim=1).to(device=device))
                 metric = test_config.metric(outputs, labels.to(device=device, dtype=torch.float32))
                 x_vals += torch.argmax(outputs, dim=1).tolist()
@@ -86,6 +85,8 @@ for epoch in range(train_config.epochs):
             wandb.log({"precision_score": precision_score(x_vals, y_vals)})
             wandb.log({"recall_score": recall_score(x_vals, y_vals)})
             wandb.log({"f1_score": f1_score(x_vals, y_vals)})
+            wandb.log({"n_pos_preds": np.sum(x_vals)})
+            wandb.log({"n_neg_preds": len(x_vals) - np.sum(x_vals)})
     try:
         os.mkdir('../checkpoints/')
     except OSError:

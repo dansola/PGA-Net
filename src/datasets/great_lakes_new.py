@@ -127,14 +127,6 @@ class TrainConfig(BaseConfig):
             return nn.MSELoss()
         else:
             return nn.CrossEntropyLoss(weight=self.weight)
-        # if self.binary_labels:
-        #     if self.class_weighted:
-        #         pos_weight = torch.FloatTensor(BINARY_WEIGHTS[self.lake.value]).to(device=self.device)
-        #     else:
-        #         pos_weight = torch.FloatTensor(BINARY_WEIGHTS['no_weights']).to(device=self.device)
-        #     return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-        # else:
-        #     return nn.MSELoss()
 
 
 @dataclass
@@ -185,14 +177,18 @@ class LakesRandom(Dataset):
         return self.conf.epoch_size
 
     def __getitem__(self, item: int) -> Tuple[torch.DoubleTensor, torch.DoubleTensor]:
-        i = np.random.randint(0, len(self.img_paths), 1)[0]
-        imgs = np.load(self.img_paths[i])
-        ice_cons = unpickle(self.ice_con_paths[i])[0]
-        assert imgs.shape[0] == len(ice_cons), \
-            f"Number of images, {imgs.shape[0]}, does not match the number of labels, {len(ice_cons)}. "
-        imgs, ice_cons = LABEL_CONVERTER[self.conf.label.value]['function'](imgs, ice_cons)
-        j = np.random.randint(0, imgs.shape[0] + 1, 1)[0]
-        img, ice_con = imgs[j - 1], ice_cons[j - 1]
-        img = img.transpose(2, 0, 1)
+        item_found = False
+        while not item_found:
+            i = np.random.randint(0, len(self.img_paths), 1)[0]
+            imgs = np.load(self.img_paths[i])
+            ice_cons = unpickle(self.ice_con_paths[i])[0]
+            assert imgs.shape[0] == len(ice_cons), \
+                f"Number of images, {imgs.shape[0]}, does not match the number of labels, {len(ice_cons)}. "
+            imgs, ice_cons = LABEL_CONVERTER[self.conf.label.value]['function'](imgs, ice_cons)
+            if imgs.shape[0] > 0:
+                j = np.random.randint(0, imgs.shape[0], 1)[0]
+                img, ice_con = imgs[j], ice_cons[j]
+                img = img.transpose(2, 0, 1)
+                item_found = True
 
         return torch.from_numpy(img), torch.tensor(ice_con)
