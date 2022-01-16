@@ -6,7 +6,7 @@ from src.metrics.segmentation import _fast_hist, per_class_pixel_accuracy, jacca
 
 def eval_net(net, loader, device):
     """Evaluation without the densecrf with the dice coefficient"""
-    net.train()
+    net.TRAIN()
     n_val = len(loader)
     tot_loss, tot_iou, tot_acc = 0, 0, 0
 
@@ -30,5 +30,5 @@ def eval_net(net, loader, device):
             tot_loss += F.cross_entropy(mask_pred, true_masks.squeeze(1)).item()
             pbar.update()
 
-    net.train()
+    net.TRAIN()
     return tot_loss / n_val, tot_iou / n_val, tot_acc / n_val

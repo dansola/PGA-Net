@@ -60,7 +60,7 @@ def get_args():
 
 def eval_net(net, loader, device):
     """Evaluation without the densecrf with the dice coefficient"""
-    net.train()
+    net.TRAIN()
     n_val = len(loader)
     tot_loss, tot_iou, tot_acc = 0, 0, 0
 

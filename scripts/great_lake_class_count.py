@@ -3,7 +3,7 @@ from src.datasets.great_lakes import Lake, Split, unpickle
 import numpy as np
 
 data_directory = "/home/dsola/repos/PGA-Net/data/patch20"
-lake = Lake.erie
+lake = Lake.ontario
 split = Split.test
 
 text_file_path = os.path.join(data_directory, f"imlist_{split.value}_{lake.value}.txt")
@@ -26,13 +26,17 @@ with open(text_file_path) as f:
         img_paths.append(os.path.join(data_directory, img_path))
         ice_con_paths.append(os.path.join(data_directory, ice_con_path))
 
-tot_0, tot_1 = 0, 0
+tot_0, tot_1, tot_other = 0, 0, 0
 for i in range(len(img_paths)):
     print(f"Counting {i} of {len(img_paths)} files...")
     ice_cons = unpickle(ice_con_paths[i])[0]
-    tot_0 = (np.array(ice_cons) == 0).sum()
-    tot_1 = (np.array(ice_cons) == 1).sum()
+    tot_0 += (np.array(ice_cons) <= 0.0).sum()
+    tot_1 += (np.array(ice_cons) >= 1.0).sum()
+    tot_other += ((np.array(ice_cons) < 1.0) & (np.array(ice_cons) > 0.0)).sum()
     del ice_cons
 
 tot = tot_0 + tot_1
 print(f"{tot_0} zeros, {tot_1} ones, out of {tot} binary labels.")
+
+tot_all = tot_0 + tot_1 + tot_other
+print(f"{tot_0} zeros, {tot_1} ones, and {tot_other} other, out of {tot_all} three class labels.")

@@ -2,13 +2,14 @@ import os
 import torch.nn as nn
 import torch
 import wandb
-from src.models.basic_cnn import AndreaNet
+from models import AndreaNet
 from torchvision.models import resnet101, resnet18
 import torch.optim as optim
-from src.datasets.great_lakes_new import Lake, LakesRandom, BaseConfig, TrainConfig, TestConfig, Label, LABEL_CONVERTER, \
-    wandb_logging
 from torch.utils.data import DataLoader
 import numpy as np
+from configs import Lake, Label, BaseConfig, TrainConfig, TestConfig, LABEL_CONVERTER
+from datasets import LakesRandom
+from utils import wandb_logging
 
 wandb.init()
 
@@ -23,7 +24,7 @@ batch_size = 10
 epochs = 50
 train_epoch_size, test_epoch_size = 500, 250
 img_paths = None  # ['/home/dsola/repos/PGA-Net/data/patch20/20140111_3_20_HH_HV_patches_erie.npy']
-ice_con_paths = None  #  ['/home/dsola/repos/PGA-Net/data/patch20/20140111_patch20_stride3_erie.pkl']
+ice_con_paths = None  # ['/home/dsola/repos/PGA-Net/data/patch20/20140111_patch20_stride3_erie.pkl']
 
 base_config = BaseConfig(data_directory=data_directory, lakes=lakes, label=label)
 

@@ -40,7 +40,7 @@ for epoch in range(N_EPOCHS):
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     checkpoint_path = f'/home/dsola/repos/PGA-Net/checkpoints/clean_darkness_312_laraspp_mobilenet_ice/epoch{epoch+1}.pth'
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    model.train()
+    model.TRAIN()
     out = nn.Softmax(dim=1)
 
     mask_list, pred_list = [], []

@@ -72,7 +72,7 @@ def train_net(net, data_dir, device, epochs=20, batch_size=1, lr=0.0001, save_cp
     criterion = nn.CrossEntropyLoss()
 
     for epoch in range(epochs):
-        net.train()
+        net.TRAIN()
         epoch_loss = 0
         with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
